@@ -133,3 +133,30 @@ VALUES
   (56, 'groups', 'J', 'Jamaica',      'Chile',        '🇯🇲', '🇨🇱', '2026-06-22 23:00:00-04:00', 'Levi''s Stadium, Santa Clara',           'scheduled'),
   (59, 'groups', 'J', 'Jamaica',      'Belgium',      '🇯🇲', '🇧🇪', '2026-06-27 22:00:00-04:00', 'AT&T Stadium, Arlington',               'scheduled'),
   (60, 'groups', 'J', 'Chile',        'Algeria',      '🇨🇱', '🇩🇿', '2026-06-27 21:00:00-04:00', 'Arrowhead Stadium, Kansas City',         'scheduled');
+
+-- Seed: Grupos K y L — FIFA World Cup 2026
+-- Fuente: Sky Sports full fixture (match numbers 61-72 oficiales)
+-- Timestamps en UTC-4 (hora Colombia/Venezuela)
+
+INSERT INTO matches (match_number, phase, group_name, home_team, away_team, home_flag, away_flag, match_date, venue, status)
+VALUES
+
+  -- ============================================================
+  -- GRUPO K: Portugal · Ghana · Uruguay · Iceland
+  -- ============================================================
+  (61, 'groups', 'K', 'Portugal',    'Ghana',       '🇵🇹', '🇬🇭', '2026-06-17 13:00:00-04:00', 'NRG Stadium, Houston',                  'scheduled'),
+  (62, 'groups', 'K', 'Uruguay',     'Iceland',     '🇺🇾', '🇮🇸', '2026-06-17 22:00:00-04:00', 'Estadio Azteca, Mexico City',           'scheduled'),
+  (65, 'groups', 'K', 'Portugal',    'Uruguay',     '🇵🇹', '🇺🇾', '2026-06-23 13:00:00-04:00', 'NRG Stadium, Houston',                  'scheduled'),
+  (66, 'groups', 'K', 'Iceland',     'Ghana',       '🇮🇸', '🇬🇭', '2026-06-23 22:00:00-04:00', 'Estadio Akron, Zapopan',                'scheduled'),
+  (69, 'groups', 'K', 'Iceland',     'Portugal',    '🇮🇸', '🇵🇹', '2026-06-27 19:30:00-04:00', 'Hard Rock Stadium, Miami',              'scheduled'),
+  (70, 'groups', 'K', 'Ghana',       'Uruguay',     '🇬🇭', '🇺🇾', '2026-06-27 19:30:00-04:00', 'Mercedes-Benz Stadium, Atlanta',        'scheduled'),
+
+  -- ============================================================
+  -- GRUPO L: Argentina · Ukraine · Cameroon · New Zealand
+  -- ============================================================
+  (63, 'groups', 'L', 'Argentina',   'Ukraine',     '🇦🇷', '🇺🇦', '2026-06-17 16:00:00-04:00', 'AT&T Stadium, Arlington',               'scheduled'),
+  (64, 'groups', 'L', 'Cameroon',    'New Zealand', '🇨🇲', '🇳🇿', '2026-06-17 19:00:00-04:00', 'BMO Field, Toronto',                    'scheduled'),
+  (67, 'groups', 'L', 'Argentina',   'Cameroon',    '🇦🇷', '🇨🇲', '2026-06-23 16:00:00-04:00', 'Gillette Stadium, Foxboro',             'scheduled'),
+  (68, 'groups', 'L', 'New Zealand', 'Ukraine',     '🇳🇿', '🇺🇦', '2026-06-23 19:00:00-04:00', 'BMO Field, Toronto',                    'scheduled'),
+  (71, 'groups', 'L', 'New Zealand', 'Argentina',   '🇳🇿', '🇦🇷', '2026-06-27 17:00:00-04:00', 'MetLife Stadium, East Rutherford',      'scheduled'),
+  (72, 'groups', 'L', 'Ukraine',     'Cameroon',    '🇺🇦', '🇨🇲', '2026-06-27 17:00:00-04:00', 'Lincoln Financial Field, Philadelphia', 'scheduled');
