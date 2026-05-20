@@ -25,3 +25,30 @@ VALUES
   (8,  'groups', 'B', 'Canada',               'Qatar',                '🇨🇦', '🇶🇦', '2026-06-18 18:00:00-04:00', 'BC Place, Vancouver',          'scheduled'),
   (11, 'groups', 'B', 'Switzerland',          'Canada',               '🇨🇭', '🇨🇦', '2026-06-24 15:00:00-04:00', 'BC Place, Vancouver',          'scheduled'),
   (12, 'groups', 'B', 'Bosnia & Herzegovina', 'Qatar',                '🇧🇦', '🇶🇦', '2026-06-24 15:00:00-04:00', 'Lumen Field, Seattle',         'scheduled');
+
+-- Seed: Grupos C y D — FIFA World Cup 2026
+-- Fuente: Sky Sports full fixture (match numbers 13-24 oficiales)
+-- Timestamps en UTC-4 (hora Colombia/Venezuela)
+
+INSERT INTO matches (match_number, phase, group_name, home_team, away_team, home_flag, away_flag, match_date, venue, status)
+VALUES
+
+  -- ============================================================
+  -- GRUPO C: Brazil · Morocco · Haiti · Scotland
+  -- ============================================================
+  (13, 'groups', 'C', 'Brazil',   'Morocco',  '🇧🇷', '🇲🇦', '2026-06-13 18:00:00-04:00', 'MetLife Stadium, East Rutherford',      'scheduled'),
+  (14, 'groups', 'C', 'Haiti',    'Scotland', '🇭🇹', '🏴󠁧󠁢󠁳󠁣󠁴󠁿', '2026-06-13 21:00:00-04:00', 'Gillette Stadium, Foxboro',             'scheduled'),
+  (17, 'groups', 'C', 'Scotland', 'Morocco',  '🏴󠁧󠁢󠁳󠁣󠁴󠁿', '🇲🇦', '2026-06-19 18:00:00-04:00', 'Gillette Stadium, Foxboro',             'scheduled'),
+  (18, 'groups', 'C', 'Brazil',   'Haiti',    '🇧🇷', '🇭🇹', '2026-06-19 20:30:00-04:00', 'Lincoln Financial Field, Philadelphia', 'scheduled'),
+  (21, 'groups', 'C', 'Scotland', 'Brazil',   '🏴󠁧󠁢󠁳󠁣󠁴󠁿', '🇧🇷', '2026-06-24 18:00:00-04:00', 'Hard Rock Stadium, Miami',              'scheduled'),
+  (22, 'groups', 'C', 'Morocco',  'Haiti',    '🇲🇦', '🇭🇹', '2026-06-24 18:00:00-04:00', 'Mercedes-Benz Stadium, Atlanta',        'scheduled'),
+
+  -- ============================================================
+  -- GRUPO D: United States · Paraguay · Australia · Türkiye
+  -- ============================================================
+  (15, 'groups', 'D', 'United States', 'Paraguay',       '🇺🇸', '🇵🇾', '2026-06-12 21:00:00-04:00', 'SoFi Stadium, Los Angeles',     'scheduled'),
+  (16, 'groups', 'D', 'Australia',     'Türkiye',        '🇦🇺', '🇹🇷', '2026-06-13 00:00:00-04:00', 'BC Place, Vancouver',           'scheduled'),
+  (19, 'groups', 'D', 'United States', 'Australia',      '🇺🇸', '🇦🇺', '2026-06-19 15:00:00-04:00', 'Lumen Field, Seattle',          'scheduled'),
+  (20, 'groups', 'D', 'Türkiye',       'Paraguay',       '🇹🇷', '🇵🇾', '2026-06-19 23:00:00-04:00', 'Levi''s Stadium, Santa Clara',  'scheduled'),
+  (23, 'groups', 'D', 'Türkiye',       'United States',  '🇹🇷', '🇺🇸', '2026-06-25 22:00:00-04:00', 'SoFi Stadium, Los Angeles',     'scheduled'),
+  (24, 'groups', 'D', 'Paraguay',      'Australia',      '🇵🇾', '🇦🇺', '2026-06-25 22:00:00-04:00', 'Levi''s Stadium, Santa Clara',  'scheduled');
