@@ -1,5 +1,48 @@
 # CLAUDE.md — Quiniela Proyelec Internacional · Mundial 2026
 
+## Estado del proyecto
+
+> Última actualización: 19 mayo 2026 · Faltan **23 días** para el inicio del torneo (11 jun)
+
+### Completado
+
+| Sprint | Entregable | Fecha |
+|---|---|---|
+| Sprint 1 | Scaffold Next.js 14 + Tailwind + Poppins | 19 may 2026 |
+| Sprint 1 | Tailwind configurado con colores Proyelec (`navy`, `skyblue`) | 19 may 2026 |
+| Sprint 1 | Clientes Supabase SSR (`lib/supabase/server.ts` + `client.ts`) | 19 may 2026 |
+| Sprint 1 | Middleware de sesión + protección de rutas | 19 may 2026 |
+| Sprint 1 | Tipos TypeScript para todos los modelos de BD (`types/index.ts`) | 19 may 2026 |
+| Sprint 1 | `.env.local` corregido (URL Supabase sin `/rest/v1/`) | 19 may 2026 |
+| Sprint 2 | Pantalla de login completa con identidad Proyelec | 19 may 2026 |
+| Sprint 2 | Pantalla de registro completa — validación @proyelec.com en cliente | 19 may 2026 |
+| Sprint 2 | Estado de éxito post-registro con instrucciones de verificación | 19 may 2026 |
+| Sprint 2 | Ruta `/auth/callback` — intercambio de código + creación de perfil | 19 may 2026 |
+| Sprint 2 | Manejo de errores de Supabase Auth (link expirado, email duplicado, etc.) | 19 may 2026 |
+| Sprint 2 | Migraciones SQL: 8 archivos en `supabase/migrations/` | 19 may 2026 |
+| Sprint 2 | Tablas: `profiles`, `matches`, `predictions`, `group_predictions`, `special_predictions`, `bracket_predictions` | 19 may 2026 |
+| Sprint 2 | Trigger `on_auth_user_created` → crea fila en `profiles` automáticamente | 19 may 2026 |
+| Sprint 2 | Función `is_admin()` como `security definer` (evita recursión RLS) | 19 may 2026 |
+| Sprint 2 | RLS activado en todas las tablas con políticas por rol + lock automático por `status` del partido | 19 may 2026 |
+| Sprint 2 | Vista `leaderboard` + función `get_leaderboard()` como `security definer` | 19 may 2026 |
+| Sprint 2 | Función `calculate_match_points(match_id)` + `calculate_group_standing_points(group)` | 19 may 2026 |
+
+### Pendiente (orden de prioridad)
+
+| Sprint | Entregable |
+|---|---|
+| Sprint 2 | Seed del fixture: 104 partidos en tabla `matches` |
+| Sprint 3 | Layout dashboard (navbar + bottom nav) |
+| Sprint 3 | Pantalla de predicciones de grupos (48 partidos + 1°/2° por grupo) |
+| Sprint 3 | Pantalla de predicciones especiales |
+| Sprint 4 | Leaderboard en tiempo real (Supabase Realtime) |
+| Sprint 4 | Bracket eliminatorio |
+| Sprint 5 | CRON + integración API-Football (actualización automática de resultados) |
+| Sprint 5 | Panel de admin (`/admin`) |
+| Sprint 6 | Deploy en Vercel + variables de entorno de producción |
+
+---
+
 ## Contexto del proyecto
 App web interna para la quiniela del Mundial USA/MEX/CAN 2026 de Proyelec International.
 Solo empleados con correo @proyelec.com pueden registrarse.

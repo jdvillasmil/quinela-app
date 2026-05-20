@@ -1,13 +1,9 @@
-export default function LoginPage() {
-  return (
-    <main className="min-h-screen flex items-center justify-center bg-navy">
-      <div className="bg-white rounded-card p-8 w-full max-w-md shadow-lg">
-        <h1 className="text-2xl font-semibold text-navy text-center mb-2">
-          Quiniela Mundial 2026
-        </h1>
-        <p className="text-center text-gray-500 text-sm mb-6">Proyelec International</p>
-        <p className="text-center text-gray-400 text-sm">Próximamente…</p>
-      </div>
-    </main>
-  )
+import LoginForm from './LoginForm'
+
+interface Props {
+  searchParams: { error?: string }
+}
+
+export default function LoginPage({ searchParams }: Props) {
+  return <LoginForm urlError={searchParams.error} />
 }
