@@ -25,8 +25,18 @@
 | Sprint 2 | Función `is_admin()` como `security definer` (evita recursión RLS) | 19 may 2026 |
 | Sprint 2 | RLS activado en todas las tablas con políticas por rol + lock automático por `status` del partido | 19 may 2026 |
 | Sprint 2 | Vista `leaderboard` + función `get_leaderboard()` como `security definer` | 19 may 2026 |
-| Sprint 2 | Función `calculate_match_points(match_id)` + `calculate_group_standing_points(group)` | 19 may 2026 |
-| Sprint 2 | Seed del fixture: 72 partidos de fase de grupos (1-72) con sedes, banderas y horas en UTC-4 (los 32 de eliminatoria se gestionarán en las fases del bracket) | 20 may 2026 |
+| Sprint 2 | Función `calculate_match_points(match_id)` + `calculate_group_standing_points(group)` (Con el fix de las escalas de puntuaciones de la fase eliminatoria) | 20 may 2026 |
+| Sprint 2 | Seed del fixture completo: 104 partidos del fixture mundialista (fase de grupos + eliminatorias unificadas) | 20 may 2026 |
+| Sprint 5 | Cliente API-Football (`lib/api-football/client.ts`) + Endpoint CRON job (`app/api/cron/update-matches/route.ts`) | 20 may 2026 |
+| Sprint 6 | Deploy en Vercel (https://quinela-app.vercel.app) + Variables de entorno de producción | 20 may 2026 |
+| Sprint 6 | Archivo `vercel.json` con la orquestación del background cron job para ejecutarse cada 5 minutos | 20 may 2026 |
+
+### Tareas Críticas Actuales (Próximos pasos inmediatos)
+
+1. **Resolver carga de datos en producción:**
+   - Diagnosticar por qué el cliente de Supabase en las vistas del dashboard, reglas de negocio y predicciones no está pintando/renderizando los partidos ni los datos del objeto de negocio en el entorno de producción.
+2. **Crear la ruta estática `/profile`:**
+   - Crear el archivo `app/(dashboard)/profile/page.tsx` para renderizar la información del perfil del usuario logueado (username, email, nombre, apellido, rol) y evitar el error 404 del botón del menú de navegación.
 
 ### Pendiente (orden de prioridad)
 
@@ -34,17 +44,9 @@
 |---|---|
 | Sprint 3 | Layout dashboard (navbar + bottom nav) |
 | Sprint 3 | Pantalla de predicciones de grupos (48 partidos + 1°/2° por grupo) |
-| Sprint 3 | Pantalla de predicciones especiales | 20 may 2026 |
-| Sprint 4 | Bracket eliminatorio | 20 may 2026 |
-
-| Sprint 5 | Panel de admin (`/admin`) | 20 may 2026 |
-
-### Pendiente (orden de prioridad)
-
-| Sprint | Entregable |
-|---|---|
-| Sprint 5 | CRON + integración API-Football (actualización automática de resultados) |
-| Sprint 6 | Deploy en Vercel + variables de entorno de producción |
+| Sprint 3 | Pantalla de predicciones especiales |
+| Sprint 4 | Bracket eliminatorio |
+| Sprint 5 | Panel de admin (`/admin`) |
 
 ---
 
@@ -122,7 +124,7 @@ created_at  timestamptz default now()
 ```sql
 id              serial primary key
 match_number    int unique not null        -- 1 a 104
-phase           text not null              -- 'groups' | 'r16' | 'qf' | 'sf' | 'third' | 'final'
+phase           text not null              -- 'groups' | 'r32' | 'r16' | 'qf' | 'sf' | 'third' | 'final'
 group_name      text                       -- 'A'..'L', null en eliminatoria
 home_team       text not null
 away_team       text not null
