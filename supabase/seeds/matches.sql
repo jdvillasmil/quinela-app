@@ -159,4 +159,60 @@ VALUES
   (67, 'groups', 'L', 'Argentina',   'Cameroon',    '🇦🇷', '🇨🇲', '2026-06-23 16:00:00-04:00', 'Gillette Stadium, Foxboro',             'scheduled'),
   (68, 'groups', 'L', 'New Zealand', 'Ukraine',     '🇳🇿', '🇺🇦', '2026-06-23 19:00:00-04:00', 'BMO Field, Toronto',                    'scheduled'),
   (71, 'groups', 'L', 'New Zealand', 'Argentina',   '🇳🇿', '🇦🇷', '2026-06-27 17:00:00-04:00', 'MetLife Stadium, East Rutherford',      'scheduled'),
-  (72, 'groups', 'L', 'Ukraine',     'Cameroon',    '🇺🇦', '🇨🇲', '2026-06-27 17:00:00-04:00', 'Lincoln Financial Field, Philadelphia', 'scheduled');
+  (72, 'groups', 'L', 'Ukraine',     'Cameroon',    '🇺🇦', '🇨🇲', '2026-06-27 17:00:00-04:00', 'Lincoln Financial Field, Philadelphia', 'scheduled'),
+
+  -- ============================================================
+  -- ELIMINATORIA: Dieciseisavos de Final (r32) - 16 partidos
+  -- ============================================================
+  (73, 'r32', null, '1A', '2B', null, null, '2026-06-28 15:00:00-04:00', 'TBD', 'scheduled'),
+  (74, 'r32', null, '1B', '3C/D/E', null, null, '2026-06-28 19:00:00-04:00', 'TBD', 'scheduled'),
+  (75, 'r32', null, '1C', '2D', null, null, '2026-06-29 15:00:00-04:00', 'TBD', 'scheduled'),
+  (76, 'r32', null, '1D', '3E/F/G', null, null, '2026-06-29 19:00:00-04:00', 'TBD', 'scheduled'),
+  (77, 'r32', null, '1E', '2F', null, null, '2026-06-30 15:00:00-04:00', 'TBD', 'scheduled'),
+  (78, 'r32', null, '1F', '3G/H/I', null, null, '2026-06-30 19:00:00-04:00', 'TBD', 'scheduled'),
+  (79, 'r32', null, '1G', '2H', null, null, '2026-07-01 15:00:00-04:00', 'TBD', 'scheduled'),
+  (80, 'r32', null, '1H', '3J/K/L', null, null, '2026-07-01 19:00:00-04:00', 'TBD', 'scheduled'),
+  (81, 'r32', null, '1I', '2J', null, null, '2026-07-02 15:00:00-04:00', 'TBD', 'scheduled'),
+  (82, 'r32', null, '1J', '3A/B/C', null, null, '2026-07-02 19:00:00-04:00', 'TBD', 'scheduled'),
+  (83, 'r32', null, '1K', '2L', null, null, '2026-07-03 15:00:00-04:00', 'TBD', 'scheduled'),
+  (84, 'r32', null, '1L', '3D/E/F', null, null, '2026-07-03 19:00:00-04:00', 'TBD', 'scheduled'),
+  (85, 'r32', null, '2A', '2C', null, null, '2026-07-03 19:00:00-04:00', 'TBD', 'scheduled'),
+  (86, 'r32', null, '2E', '2G', null, null, '2026-07-03 19:00:00-04:00', 'TBD', 'scheduled'),
+  (87, 'r32', null, '2I', '2K', null, null, '2026-07-03 19:00:00-04:00', 'TBD', 'scheduled'),
+  (88, 'r32', null, '3H/I/J', '3K/L/A', null, null, '2026-07-03 19:00:00-04:00', 'TBD', 'scheduled'),
+
+  -- ============================================================
+  -- ELIMINATORIA: Octavos de Final (r16) - 8 partidos
+  -- ============================================================
+  (89, 'r16', null, 'W73', 'W74', null, null, '2026-07-04 15:00:00-04:00', 'TBD', 'scheduled'),
+  (90, 'r16', null, 'W75', 'W76', null, null, '2026-07-04 19:00:00-04:00', 'TBD', 'scheduled'),
+  (91, 'r16', null, 'W77', 'W78', null, null, '2026-07-05 15:00:00-04:00', 'TBD', 'scheduled'),
+  (92, 'r16', null, 'W79', 'W80', null, null, '2026-07-05 19:00:00-04:00', 'TBD', 'scheduled'),
+  (93, 'r16', null, 'W81', 'W82', null, null, '2026-07-06 15:00:00-04:00', 'TBD', 'scheduled'),
+  (94, 'r16', null, 'W83', 'W84', null, null, '2026-07-06 19:00:00-04:00', 'TBD', 'scheduled'),
+  (95, 'r16', null, 'W85', 'W86', null, null, '2026-07-07 15:00:00-04:00', 'TBD', 'scheduled'),
+  (96, 'r16', null, 'W87', 'W88', null, null, '2026-07-07 19:00:00-04:00', 'TBD', 'scheduled'),
+
+  -- ============================================================
+  -- ELIMINATORIA: Cuartos de Final (qf) - 4 partidos
+  -- ============================================================
+  (97, 'qf', null, 'W89', 'W90', null, null, '2026-07-09 15:00:00-04:00', 'TBD', 'scheduled'),
+  (98, 'qf', null, 'W91', 'W92', null, null, '2026-07-09 19:00:00-04:00', 'TBD', 'scheduled'),
+  (99, 'qf', null, 'W93', 'W94', null, null, '2026-07-10 15:00:00-04:00', 'TBD', 'scheduled'),
+  (100, 'qf', null, 'W95', 'W96', null, null, '2026-07-10 19:00:00-04:00', 'TBD', 'scheduled'),
+
+  -- ============================================================
+  -- ELIMINATORIA: Semifinales (sf) - 2 partidos
+  -- ============================================================
+  (101, 'sf', null, 'W97', 'W98', null, null, '2026-07-14 19:00:00-04:00', 'TBD', 'scheduled'),
+  (102, 'sf', null, 'W99', 'W100', null, null, '2026-07-15 19:00:00-04:00', 'TBD', 'scheduled'),
+
+  -- ============================================================
+  -- ELIMINATORIA: Tercer Puesto (third) - 1 partido
+  -- ============================================================
+  (103, 'third', null, 'L101', 'L102', null, null, '2026-07-18 19:00:00-04:00', 'TBD', 'scheduled'),
+
+  -- ============================================================
+  -- ELIMINATORIA: Final (final) - 1 partido
+  -- ============================================================
+  (104, 'final', null, 'W101', 'W102', null, null, '2026-07-19 19:00:00-04:00', 'MetLife Stadium, East Rutherford', 'scheduled');

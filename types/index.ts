@@ -1,5 +1,5 @@
 export type UserRole = 'user' | 'admin'
-export type MatchPhase = 'groups' | 'r16' | 'qf' | 'sf' | 'third' | 'final'
+export type MatchPhase = 'groups' | 'r32' | 'r16' | 'qf' | 'sf' | 'third' | 'final'
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
 
 export interface Profile {

@@ -35,13 +35,12 @@
 | Sprint 3 | Layout dashboard (navbar + bottom nav) |
 | Sprint 3 | Pantalla de predicciones de grupos (48 partidos + 1°/2° por grupo) |
 | Sprint 3 | Pantalla de predicciones especiales | 20 may 2026 |
-| Sprint 4 | Leaderboard en tiempo real (Supabase Realtime) | 20 may 2026 |
+| Sprint 4 | Bracket eliminatorio | 20 may 2026 |
 
 ### Pendiente (orden de prioridad)
 
 | Sprint | Entregable |
 |---|---|
-| Sprint 4 | Bracket eliminatorio |
 | Sprint 5 | CRON + integración API-Football (actualización automática de resultados) |
 | Sprint 5 | Panel de admin (`/admin`) |
 | Sprint 6 | Deploy en Vercel + variables de entorno de producción |
