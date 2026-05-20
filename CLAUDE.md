@@ -2,7 +2,7 @@
 
 ## Estado del proyecto
 
-> Última actualización: 19 mayo 2026 · Faltan **23 días** para el inicio del torneo (11 jun)
+> Última actualización: 20 mayo 2026 · Faltan **22 días** para el inicio del torneo (11 jun)
 
 ### Completado
 
@@ -26,12 +26,12 @@
 | Sprint 2 | RLS activado en todas las tablas con políticas por rol + lock automático por `status` del partido | 19 may 2026 |
 | Sprint 2 | Vista `leaderboard` + función `get_leaderboard()` como `security definer` | 19 may 2026 |
 | Sprint 2 | Función `calculate_match_points(match_id)` + `calculate_group_standing_points(group)` | 19 may 2026 |
+| Sprint 2 | Seed del fixture: 72 partidos de fase de grupos (1-72) con sedes, banderas y horas en UTC-4 (los 32 de eliminatoria se gestionarán en las fases del bracket) | 20 may 2026 |
 
 ### Pendiente (orden de prioridad)
 
 | Sprint | Entregable |
 |---|---|
-| Sprint 2 | Seed del fixture: 104 partidos en tabla `matches` |
 | Sprint 3 | Layout dashboard (navbar + bottom nav) |
 | Sprint 3 | Pantalla de predicciones de grupos (48 partidos + 1°/2° por grupo) |
 | Sprint 3 | Pantalla de predicciones especiales |
