@@ -99,8 +99,9 @@ begin
   else
 
     v_pts_exact := case v_match.phase
-      when 'r16' then 4
-      when 'qf'  then 6
+      when 'r32' then 4
+      when 'r16' then 6
+      when 'qf'  then 8
       when 'sf'  then 10
       else 0  -- 'third' and 'final' have no exact-score bonus
     end;
@@ -139,8 +140,9 @@ begin
     end;
 
     v_pts_winner := case v_match.phase
-      when 'r16'   then 2
-      when 'qf'    then 3
+      when 'r32'   then 2
+      when 'r16'   then 3
+      when 'qf'    then 4
       when 'sf'    then 5
       when 'third' then 5
       when 'final' then 15

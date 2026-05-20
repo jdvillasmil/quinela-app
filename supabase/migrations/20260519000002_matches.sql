@@ -5,7 +5,7 @@
 create table if not exists public.matches (
   id           serial primary key,
   match_number int  not null unique,
-  phase        text not null check (phase in ('groups', 'r16', 'qf', 'sf', 'third', 'final')),
+  phase        text not null check (phase in ('groups', 'r32', 'r16', 'qf', 'sf', 'third', 'final')),
   group_name   text check (group_name in ('A','B','C','D','E','F','G','H','I','J','K','L')),
   home_team    text not null,
   away_team    text not null,
