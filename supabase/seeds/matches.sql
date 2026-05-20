@@ -106,3 +106,30 @@ VALUES
   (44, 'groups', 'H', 'Canada',      'Colombia',    '🇨🇦', '🇨🇴', '2026-06-21 18:00:00-04:00', 'Hard Rock Stadium, Miami',              'scheduled'),
   (47, 'groups', 'H', 'Canada',      'Spain',       '🇨🇦', '🇪🇸', '2026-06-26 20:00:00-04:00', 'Estadio Akron, Zapopan',                'scheduled'),
   (48, 'groups', 'H', 'Colombia',    'Morocco',     '🇨🇴', '🇲🇦', '2026-06-26 20:00:00-04:00', 'NRG Stadium, Houston',                  'scheduled');
+
+-- Seed: Grupos I y J — FIFA World Cup 2026
+-- Fuente: Sky Sports full fixture (match numbers 49-60 oficiales)
+-- Timestamps en UTC-4 (hora Colombia/Venezuela)
+
+INSERT INTO matches (match_number, phase, group_name, home_team, away_team, home_flag, away_flag, match_date, venue, status)
+VALUES
+
+  -- ============================================================
+  -- GRUPO I: Italy · Denmark · Saudi Arabia · Benin
+  -- ============================================================
+  (49, 'groups', 'I', 'Italy',        'Denmark',      '🇮🇹', '🇩🇰', '2026-06-16 15:00:00-04:00', 'MetLife Stadium, East Rutherford',      'scheduled'),
+  (50, 'groups', 'I', 'Saudi Arabia', 'Benin',        '🇸🇦', '🇧🇯', '2026-06-16 18:00:00-04:00', 'Gillette Stadium, Foxboro',             'scheduled'),
+  (53, 'groups', 'I', 'Italy',        'Saudi Arabia', '🇮🇹', '🇸🇦', '2026-06-22 17:00:00-04:00', 'Lincoln Financial Field, Philadelphia', 'scheduled'),
+  (54, 'groups', 'I', 'Benin',        'Denmark',      '🇧🇯', '🇩🇰', '2026-06-22 20:00:00-04:00', 'MetLife Stadium, East Rutherford',      'scheduled'),
+  (57, 'groups', 'I', 'Benin',        'Italy',        '🇧🇯', '🇮🇹', '2026-06-26 15:00:00-04:00', 'Gillette Stadium, Foxboro',             'scheduled'),
+  (58, 'groups', 'I', 'Denmark',      'Saudi Arabia', '🇩🇰', '🇸🇦', '2026-06-26 15:00:00-04:00', 'BMO Field, Toronto',                    'scheduled'),
+
+  -- ============================================================
+  -- GRUPO J: Belgium · Chile · Algeria · Jamaica
+  -- ============================================================
+  (51, 'groups', 'J', 'Belgium',      'Chile',        '🇧🇪', '🇨🇱', '2026-06-16 21:00:00-04:00', 'Arrowhead Stadium, Kansas City',         'scheduled'),
+  (52, 'groups', 'J', 'Algeria',      'Jamaica',      '🇩🇿', '🇯🇲', '2026-06-17 00:00:00-04:00', 'Levi''s Stadium, Santa Clara',           'scheduled'),
+  (55, 'groups', 'J', 'Belgium',      'Algeria',      '🇧🇪', '🇩🇿', '2026-06-22 13:00:00-04:00', 'AT&T Stadium, Arlington',               'scheduled'),
+  (56, 'groups', 'J', 'Jamaica',      'Chile',        '🇯🇲', '🇨🇱', '2026-06-22 23:00:00-04:00', 'Levi''s Stadium, Santa Clara',           'scheduled'),
+  (59, 'groups', 'J', 'Jamaica',      'Belgium',      '🇯🇲', '🇧🇪', '2026-06-27 22:00:00-04:00', 'AT&T Stadium, Arlington',               'scheduled'),
+  (60, 'groups', 'J', 'Chile',        'Algeria',      '🇨🇱', '🇩🇿', '2026-06-27 21:00:00-04:00', 'Arrowhead Stadium, Kansas City',         'scheduled');
