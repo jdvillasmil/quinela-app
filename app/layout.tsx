@@ -11,6 +11,10 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: 'Quiniela Mundial 2026 — Proyelec',
   description: 'Quiniela interna del Mundial USA/MEX/CAN 2026 · Proyelec International',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
