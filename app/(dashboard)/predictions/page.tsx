@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import type { Match, Prediction } from '@/types'
+import type { Match, Prediction, SpecialPrediction } from '@/types'
 import PredictionsClient from './PredictionsClient'
 
 export const metadata = {
@@ -65,7 +65,16 @@ export default async function PredictionsPage() {
   // Sorted list of groups (A–L)
   const groups = Object.keys(groupData).sort()
 
+  // Fetch special predictions
+  const { data: specialRaw } = await (supabase as any)
+    .from('special_predictions')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  const specialPrediction = (specialRaw as SpecialPrediction) ?? null
+
   return (
-    <PredictionsClient groupData={groupData} groups={groups} />
+    <PredictionsClient groupData={groupData} groups={groups} specialPrediction={specialPrediction} />
   )
 }

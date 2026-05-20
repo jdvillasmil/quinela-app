@@ -65,3 +65,56 @@ export async function saveGroupPredictions(
   revalidatePath('/predictions')
   return { success: true, message: 'Predicciones guardadas correctamente.' }
 }
+
+export interface SpecialPredictionPayload {
+  top_scorer: string | null
+  best_player: string | null
+  best_keeper: string | null
+  total_goals: number | null
+  most_red_cards: string | null
+  most_goals_match: string | null
+  fastest_goal_team: string | null
+}
+
+export async function saveSpecialPredictions(
+  payload: SpecialPredictionPayload
+): Promise<SaveResult> {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, message: 'No autorizado.' }
+  }
+
+  if (payload.total_goals !== null && (!Number.isInteger(payload.total_goals) || payload.total_goals < 0)) {
+    return { success: false, message: 'Total de goles debe ser un entero positivo.' }
+  }
+
+  const { error } = await (supabase as any)
+    .from('special_predictions')
+    .upsert(
+      {
+        user_id: user.id,
+        top_scorer: payload.top_scorer,
+        best_player: payload.best_player,
+        best_keeper: payload.best_keeper,
+        total_goals: payload.total_goals,
+        most_red_cards: payload.most_red_cards,
+        most_goals_match: payload.most_goals_match,
+        fastest_goal_team: payload.fastest_goal_team,
+        points_earned: 0,
+      },
+      { onConflict: 'user_id' }
+    )
+
+  if (error) {
+    console.error('Error saving special predictions:', error)
+    return { success: false, message: 'Error al guardar premios especiales.' }
+  }
+
+  revalidatePath('/predictions')
+  return { success: true, message: 'Premios especiales guardados correctamente.' }
+}
