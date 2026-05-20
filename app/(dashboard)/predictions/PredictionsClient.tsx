@@ -372,6 +372,8 @@ function SpecialPredictionsPanel({ initialData, locked }: { initialData: Special
               <input
                 id={f.id}
                 type={f.type}
+                min={f.type === 'number' ? 0 : undefined}
+                max={f.type === 'number' ? 500 : undefined}
                 value={formData[f.id as keyof SpecialPredictionPayload] ?? ''}
                 onChange={(e) => {
                   const val = e.target.value
