@@ -52,3 +52,30 @@ VALUES
   (20, 'groups', 'D', 'Türkiye',       'Paraguay',       '🇹🇷', '🇵🇾', '2026-06-19 23:00:00-04:00', 'Levi''s Stadium, Santa Clara',  'scheduled'),
   (23, 'groups', 'D', 'Türkiye',       'United States',  '🇹🇷', '🇺🇸', '2026-06-25 22:00:00-04:00', 'SoFi Stadium, Los Angeles',     'scheduled'),
   (24, 'groups', 'D', 'Paraguay',      'Australia',      '🇵🇾', '🇦🇺', '2026-06-25 22:00:00-04:00', 'Levi''s Stadium, Santa Clara',  'scheduled');
+
+-- Seed: Grupos E y F — FIFA World Cup 2026
+-- Fuente: Sky Sports full fixture (match numbers 25-36 oficiales)
+-- Timestamps en UTC-4 (hora Colombia/Venezuela)
+
+INSERT INTO matches (match_number, phase, group_name, home_team, away_team, home_flag, away_flag, match_date, venue, status)
+VALUES
+
+  -- ============================================================
+  -- GRUPO E: Germany · Curaçao · Ivory Coast · Ecuador
+  -- ============================================================
+  (25, 'groups', 'E', 'Germany',     'Curaçao',     '🇩🇪', '🇨🇼', '2026-06-14 13:00:00-04:00', 'NRG Stadium, Houston',                  'scheduled'),
+  (26, 'groups', 'E', 'Ivory Coast', 'Ecuador',     '🇨🇮', '🇪🇨', '2026-06-14 19:00:00-04:00', 'Lincoln Financial Field, Philadelphia', 'scheduled'),
+  (29, 'groups', 'E', 'Germany',     'Ivory Coast', '🇩🇪', '🇨🇮', '2026-06-20 16:00:00-04:00', 'BMO Field, Toronto',                    'scheduled'),
+  (30, 'groups', 'E', 'Ecuador',     'Curaçao',     '🇪🇨', '🇨🇼', '2026-06-20 19:00:00-04:00', 'Arrowhead Stadium, Kansas City',         'scheduled'),
+  (33, 'groups', 'E', 'Curaçao',     'Ivory Coast', '🇨🇼', '🇨🇮', '2026-06-25 16:00:00-04:00', 'Lincoln Financial Field, Philadelphia', 'scheduled'),
+  (34, 'groups', 'E', 'Ecuador',     'Germany',     '🇪🇨', '🇩🇪', '2026-06-25 16:00:00-04:00', 'MetLife Stadium, East Rutherford',      'scheduled'),
+
+  -- ============================================================
+  -- GRUPO F: Netherlands · Japan · Sweden · Tunisia
+  -- ============================================================
+  (27, 'groups', 'F', 'Netherlands', 'Japan',       '🇳🇱', '🇯🇵', '2026-06-14 16:00:00-04:00', 'AT&T Stadium, Arlington',               'scheduled'),
+  (28, 'groups', 'F', 'Sweden',      'Tunisia',     '🇸🇪', '🇹🇳', '2026-06-14 22:00:00-04:00', 'Estadio BBVA, Monterrey',               'scheduled'),
+  (31, 'groups', 'F', 'Netherlands', 'Sweden',      '🇳🇱', '🇸🇪', '2026-06-20 12:00:00-04:00', 'NRG Stadium, Houston',                  'scheduled'),
+  (32, 'groups', 'F', 'Tunisia',     'Japan',       '🇹🇳', '🇯🇵', '2026-06-20 17:00:00-04:00', 'Estadio BBVA, Monterrey',               'scheduled'),
+  (35, 'groups', 'F', 'Japan',       'Sweden',      '🇯🇵', '🇸🇪', '2026-06-25 19:00:00-04:00', 'AT&T Stadium, Arlington',               'scheduled'),
+  (36, 'groups', 'F', 'Tunisia',     'Netherlands', '🇹🇳', '🇳🇱', '2026-06-25 19:00:00-04:00', 'Arrowhead Stadium, Kansas City',         'scheduled');
