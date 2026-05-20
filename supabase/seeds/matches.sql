@@ -79,3 +79,30 @@ VALUES
   (32, 'groups', 'F', 'Tunisia',     'Japan',       '🇹🇳', '🇯🇵', '2026-06-20 17:00:00-04:00', 'Estadio BBVA, Monterrey',               'scheduled'),
   (35, 'groups', 'F', 'Japan',       'Sweden',      '🇯🇵', '🇸🇪', '2026-06-25 19:00:00-04:00', 'AT&T Stadium, Arlington',               'scheduled'),
   (36, 'groups', 'F', 'Tunisia',     'Netherlands', '🇹🇳', '🇳🇱', '2026-06-25 19:00:00-04:00', 'Arrowhead Stadium, Kansas City',         'scheduled');
+
+-- Seed: Grupos G y H — FIFA World Cup 2026
+-- Fuente: Sky Sports full fixture (match numbers 37-48 oficiales)
+-- Timestamps en UTC-4 (hora Colombia/Venezuela)
+
+INSERT INTO matches (match_number, phase, group_name, home_team, away_team, home_flag, away_flag, match_date, venue, status)
+VALUES
+
+  -- ============================================================
+  -- GRUPO G: France · Nigeria · South Korea · Iraq
+  -- ============================================================
+  (37, 'groups', 'G', 'France',      'Nigeria',     '🇫🇷', '🇳🇬', '2026-06-15 15:00:00-04:00', 'Lumen Field, Seattle',                  'scheduled'),
+  (38, 'groups', 'G', 'South Korea', 'Iraq',        '🇰🇷', '🇮🇶', '2026-06-15 21:00:00-04:00', 'SoFi Stadium, Los Angeles',             'scheduled'),
+  (41, 'groups', 'G', 'France',      'South Korea', '🇫🇷', '🇰🇷', '2026-06-21 15:00:00-04:00', 'SoFi Stadium, Los Angeles',             'scheduled'),
+  (42, 'groups', 'G', 'Iraq',        'Nigeria',     '🇮🇶', '🇳🇬', '2026-06-21 18:00:00-04:00', 'BC Place, Vancouver',                   'scheduled'),
+  (45, 'groups', 'G', 'Iraq',        'France',      '🇮🇶', '🇫🇷', '2026-06-26 23:00:00-04:00', 'BC Place, Vancouver',                   'scheduled'),
+  (46, 'groups', 'G', 'Nigeria',     'South Korea', '🇳🇬', '🇰🇷', '2026-06-26 23:00:00-04:00', 'Lumen Field, Seattle',                  'scheduled'),
+
+  -- ============================================================
+  -- GRUPO H: Spain · Colombia · Morocco · Canada
+  -- ============================================================
+  (39, 'groups', 'H', 'Spain',       'Colombia',    '🇪🇸', '🇨🇴', '2026-06-15 12:00:00-04:00', 'Mercedes-Benz Stadium, Atlanta',        'scheduled'),
+  (40, 'groups', 'H', 'Morocco',     'Canada',      '🇲🇦', '🇨🇦', '2026-06-15 18:00:00-04:00', 'Hard Rock Stadium, Miami',              'scheduled'),
+  (43, 'groups', 'H', 'Spain',       'Morocco',     '🇪🇸', '🇲🇦', '2026-06-21 12:00:00-04:00', 'Mercedes-Benz Stadium, Atlanta',        'scheduled'),
+  (44, 'groups', 'H', 'Canada',      'Colombia',    '🇨🇦', '🇨🇴', '2026-06-21 18:00:00-04:00', 'Hard Rock Stadium, Miami',              'scheduled'),
+  (47, 'groups', 'H', 'Canada',      'Spain',       '🇨🇦', '🇪🇸', '2026-06-26 20:00:00-04:00', 'Estadio Akron, Zapopan',                'scheduled'),
+  (48, 'groups', 'H', 'Colombia',    'Morocco',     '🇨🇴', '🇲🇦', '2026-06-26 20:00:00-04:00', 'NRG Stadium, Houston',                  'scheduled');
