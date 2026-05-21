@@ -1,9 +1,1 @@
-{
-  "crons": [
-    {
-      "path": "/api/cron/update-matches",
-      "schedule": "0 * * * *",
-      "_comment": "Hobby plan limit: once per hour. Upgrade to Pro to use '*/5 * * * *' (every 5 min)."
-    }
-  ]
-}
+{}
