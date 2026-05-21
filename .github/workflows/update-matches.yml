@@ -1,0 +1,39 @@
+name: Update Matches Cron
+
+on:
+  schedule:
+    # Runs every 5 minutes between 15:00 and 23:55 UTC (11:00 to 19:55 UTC-4) in June and July
+    - cron: '*/5 15-23 * 6,7 *'
+    # Runs every 5 minutes between 00:00 and 03:55 UTC (20:00 to 23:55 UTC-4) in June and July
+    - cron: '*/5 0-3 * 6,7 *'
+    # Runs at 04:00 UTC (00:00 UTC-4) in June and July
+    - cron: '0 4 * 6,7 *'
+  workflow_dispatch: # Allows manual trigger from the GitHub Actions UI
+
+jobs:
+  update-matches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Tournament Dates
+        id: check-date
+        run: |
+          CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          START_TIME="2026-06-11T15:00:00Z"
+          END_TIME="2026-07-20T04:00:00Z"
+          
+          echo "Current UTC Time: $CURRENT_TIME"
+          echo "Tournament Window: $START_TIME to $END_TIME"
+          
+          if [[ "$CURRENT_TIME" < "$START_TIME" || "$CURRENT_TIME" > "$END_TIME" ]]; then
+            echo "::notice::Current time is outside the tournament window. Skipping execution."
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger Update Matches API
+        if: steps.check-date.outputs.should_run == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          curl --fail -X POST https://quinela-app.vercel.app/api/cron/update-matches \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"
