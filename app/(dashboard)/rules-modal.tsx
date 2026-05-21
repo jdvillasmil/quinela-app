@@ -24,7 +24,7 @@ export default function RulesModal({ open }: { open: boolean }) {
         {/* Header */}
         <div className="bg-navy rounded-t-2xl px-6 py-5 shrink-0">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">⚽</span>
+            <img src="/favicon.png" alt="Proyelec" width={36} height={36} className="flex-shrink-0" />
             <div>
               <p className="text-skyblue text-xs font-semibold uppercase tracking-widest">
                 Quiniela Proyelec Internacional

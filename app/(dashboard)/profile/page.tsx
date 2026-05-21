@@ -30,20 +30,20 @@ export default async function ProfilePage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-navy">Mi Perfil</h1>
+        <h1 className="text-2xl font-semibold text-white">Mi Perfil</h1>
         <p className="text-sm text-gray-500 mt-1">Información de tu cuenta en la quiniela.</p>
       </div>
 
       {/* Avatar + nombre */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex items-center gap-5">
-        <div className="w-16 h-16 rounded-full bg-navy flex items-center justify-center flex-shrink-0">
+      <div className="bg-[#071729] rounded-xl border border-[#1E3A6E]/50 shadow-lg p-6 flex items-center gap-5">
+        <div className="w-16 h-16 rounded-full bg-navy border border-skyblue/20 flex items-center justify-center flex-shrink-0">
           <span className="text-xl font-bold text-skyblue">{initials}</span>
         </div>
         <div>
-          <p className="text-lg font-semibold text-navy">{fullName}</p>
-          <p className="text-sm text-gray-500">@{profile?.username}</p>
+          <p className="text-lg font-semibold text-white">{fullName}</p>
+          <p className="text-sm text-gray-400">@{profile?.username}</p>
           {isAdmin && (
-            <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-200">
+            <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/25">
               <Shield className="w-3 h-3" />
               Administrador
             </span>
@@ -52,7 +52,7 @@ export default async function ProfilePage() {
       </div>
 
       {/* Campos de info */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
+      <div className="bg-[#071729] rounded-xl border border-[#1E3A6E]/50 shadow-lg divide-y divide-white/6">
         <ProfileField icon={AtSign} label="Usuario" value={`@${profile?.username}`} />
         <ProfileField icon={Mail} label="Correo electrónico" value={profile?.email || user.email || ''} />
         <ProfileField icon={User} label="Nombre" value={profile?.first_name || '—'} />
@@ -91,8 +91,8 @@ function ProfileField({
     <div className="flex items-center gap-4 px-5 py-4">
       <Icon className="w-4 h-4 text-skyblue flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
-        <p className="text-sm font-medium text-navy mt-0.5 truncate">{value}</p>
+        <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{label}</p>
+        <p className="text-sm font-medium text-gray-200 mt-0.5 truncate">{value}</p>
       </div>
     </div>
   )

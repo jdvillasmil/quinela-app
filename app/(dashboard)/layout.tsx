@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { BottomNav, DesktopNav } from './navigation'
@@ -46,13 +47,15 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#020B18] flex flex-col font-sans">
       {/* Fixed Header */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-navy text-white shadow-md z-50 border-b border-[#64AFE6]/10">
+      <header className="fixed top-0 left-0 right-0 h-16 bg-navy text-white shadow-md z-50 border-b border-skyblue/10">
         <div className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Logo / Title */}
           <div className="flex items-center space-x-3">
-            <span className="text-2xl">⚽</span>
+            <div className="w-8 h-8 flex items-center justify-center">
+              <Image src="/favicon.png" alt="Proyelec" width={32} height={32} priority />
+            </div>
             <span className="text-lg font-bold tracking-tight">
               Quiniela <span className="text-skyblue">Proyelec</span>
             </span>

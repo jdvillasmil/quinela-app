@@ -5,12 +5,12 @@ import { Trophy, Activity } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { LeaderboardEntry } from '@/types'
 
-export default function LeaderboardClient({ 
-  initialData, 
-  currentUserId 
-}: { 
-  initialData: LeaderboardEntry[], 
-  currentUserId: string 
+export default function LeaderboardClient({
+  initialData,
+  currentUserId
+}: {
+  initialData: LeaderboardEntry[],
+  currentUserId: string
 }) {
   const [data, setData] = useState<LeaderboardEntry[]>(initialData)
   const [isUpdating, setIsUpdating] = useState(false)
@@ -26,12 +26,10 @@ export default function LeaderboardClient({
     if (!error && newData) {
       setData(newData as LeaderboardEntry[])
     }
-    // Simulate slight delay to show updating indicator visually
     setTimeout(() => setIsUpdating(false), 800)
   }, [supabase])
 
   useEffect(() => {
-    // Subscribe to changes on any table that might affect the score
     const channel = supabase.channel('leaderboard-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'predictions' }, fetchLeaderboard)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'group_predictions' }, fetchLeaderboard)
@@ -45,18 +43,24 @@ export default function LeaderboardClient({
     }
   }, [supabase, fetchLeaderboard])
 
-  function getMedal(rank: number) {
-    if (rank === 1) return <span className="text-2xl" title="Oro">🥇</span>
-    if (rank === 2) return <span className="text-2xl" title="Plata">🥈</span>
-    if (rank === 3) return <span className="text-2xl" title="Bronce">🥉</span>
-    return <span className="text-lg font-bold text-gray-400 w-8 text-center inline-block">{rank}</span>
+  function getRankBadge(rank: number) {
+    if (rank === 1) return (
+      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold text-sm tabular-nums">1</span>
+    )
+    if (rank === 2) return (
+      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-400/10 border border-gray-400/25 text-gray-300 font-bold text-sm tabular-nums">2</span>
+    )
+    if (rank === 3) return (
+      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-500/10 border border-orange-500/25 text-orange-400 font-bold text-sm tabular-nums">3</span>
+    )
+    return <span className="text-sm font-semibold text-gray-600 w-8 text-center inline-block tabular-nums">{rank}</span>
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-navy flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Trophy className="w-6 h-6 text-skyblue" />
             Tabla de Posiciones
           </h1>
@@ -65,60 +69,64 @@ export default function LeaderboardClient({
           </p>
         </div>
         {isUpdating && (
-          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-500 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 animate-pulse">
+          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 bg-emerald-500/8 px-3 py-1.5 rounded-full border border-emerald-500/20 animate-pulse">
             <Activity className="w-3 h-3" />
             Actualizando...
           </div>
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-[#071729] rounded-xl border border-[#1E3A6E]/50 shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+            <thead className="bg-[#030A15] border-b border-[#1E3A6E]/50 text-gray-500 font-semibold text-xs uppercase tracking-wider">
               <tr>
                 <th className="px-6 py-4 text-center w-16">Pos</th>
                 <th className="px-6 py-4">Usuario</th>
                 <th className="px-6 py-4 text-center">Grupos</th>
                 <th className="px-6 py-4 text-center">Eliminatorias</th>
                 <th className="px-6 py-4 text-center">Especiales</th>
-                <th className="px-6 py-4 text-center bg-skyblue/5 text-navy rounded-t-lg">Total</th>
+                <th className="px-6 py-4 text-center bg-skyblue/5 text-skyblue">Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[#1E3A6E]/30">
               {data.map((entry) => {
                 const isMe = entry.user_id === currentUserId
                 return (
-                  <tr 
-                    key={entry.user_id} 
-                    className={`transition-colors hover:bg-gray-50 ${isMe ? 'bg-skyblue/5 border-l-4 border-l-skyblue' : 'border-l-4 border-l-transparent'}`}
+                  <tr
+                    key={entry.user_id}
+                    className={`transition-colors duration-150 ${
+                      isMe
+                        ? 'bg-skyblue/6 border-l-2 border-l-skyblue'
+                        : 'hover:bg-white/4 border-l-2 border-l-transparent'
+                    }`}
                   >
                     <td className="px-6 py-4 text-center">
-                      {getMedal(entry.rank)}
+                      {getRankBadge(entry.rank)}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <span className={`font-semibold ${isMe ? 'text-skyblue' : 'text-navy'}`}>
+                        <span className={`font-semibold ${isMe ? 'text-skyblue' : 'text-gray-200'}`}>
                           @{entry.username}
                         </span>
                         {isMe && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider bg-navy text-white px-2 py-0.5 rounded-full">
+                          <span className="text-[10px] font-bold uppercase tracking-wider bg-skyblue/15 text-skyblue px-2 py-0.5 rounded-full border border-skyblue/25">
                             Tú
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-center text-gray-500 font-medium">
+                    <td className="px-6 py-4 text-center text-gray-400 font-medium tabular-nums">
                       {entry.group_points}
                     </td>
-                    <td className="px-6 py-4 text-center text-gray-500 font-medium">
+                    <td className="px-6 py-4 text-center text-gray-400 font-medium tabular-nums">
                       {entry.knockout_points}
                     </td>
-                    <td className="px-6 py-4 text-center text-gray-500 font-medium">
+                    <td className="px-6 py-4 text-center text-gray-400 font-medium tabular-nums">
                       {entry.special_points}
                     </td>
                     <td className="px-6 py-4 text-center bg-skyblue/5">
-                      <span className="text-lg font-bold text-navy">
+                      <span className="text-lg font-bold text-white tabular-nums">
                         {entry.total_points}
                       </span>
                     </td>

@@ -167,7 +167,7 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
     <div className="space-y-6 pb-20">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-navy flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <GitMerge className="w-6 h-6 text-skyblue" />
             Bracket Eliminatorio
           </h1>
@@ -177,14 +177,14 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex p-1 bg-gray-200/50 rounded-lg shrink-0 overflow-x-auto hide-scrollbar">
+        <div className="flex p-1 bg-[#020B18] border border-[#1E3A6E]/40 rounded-lg shrink-0 overflow-x-auto hide-scrollbar">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`
                 px-4 py-2 rounded-md text-sm font-semibold transition-colors whitespace-nowrap
-                ${activeTab === tab.id ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-navy'}
+                ${activeTab === tab.id ? 'bg-[#071729] text-white shadow-sm border border-[#1E3A6E]/50' : 'text-gray-500 hover:text-gray-300'}
               `}
             >
               {tab.label}
@@ -199,11 +199,11 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
       </div>
 
       {/* Floating Save Bar */}
-      <div className="fixed bottom-[80px] sm:bottom-0 left-0 right-0 sm:left-64 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-40">
+      <div className="fixed bottom-[80px] sm:bottom-0 left-0 right-0 sm:left-64 bg-[#071729] border-t border-[#1E3A6E]/60 p-4 shadow-lg z-40">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex-1">
             {result ? (
-              <div className={`flex items-center gap-2 text-sm font-medium ${result.success ? 'text-emerald-600' : 'text-red-600'}`}>
+              <div className={`flex items-center gap-2 text-sm font-medium ${result.success ? 'text-emerald-400' : 'text-red-400'}`}>
                 {result.success ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
                 {result.message}
               </div>
@@ -213,12 +213,12 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
               </p>
             )}
           </div>
-          
+
           {!isBracketLocked && (
             <button
               onClick={handleSave}
               disabled={isPending}
-              className="flex items-center justify-center gap-2 px-6 py-2.5 w-full sm:w-auto bg-navy text-white text-sm font-semibold rounded-lg hover:bg-navy/90 transition-colors shadow-sm disabled:opacity-60"
+              className="flex items-center justify-center gap-2 px-6 py-2.5 w-full sm:w-auto bg-skyblue text-navy text-sm font-bold rounded-lg hover:bg-skyblue/90 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {isPending ? 'Guardando...' : 'Guardar Bracket Completo'}
