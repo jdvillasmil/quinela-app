@@ -1,204 +1,332 @@
 'use client'
 
-import { useState, useTransition, useCallback } from 'react'
-import { Trophy, GitMerge, Loader2, Save, CheckCircle, AlertCircle, Lock } from 'lucide-react'
-import type { Match, BracketPrediction, MatchPhase } from '@/types'
+import { useState, useTransition, useCallback, useMemo } from 'react'
+import { Loader2, Save, CheckCircle, AlertCircle } from 'lucide-react'
+import type { Match, BracketPrediction } from '@/types'
 import { saveBracketPredictions } from './actions'
 import { teamEs } from '@/lib/i18n/teams'
 
+// ── Layout constants ──────────────────────────────────────────────────────────
+const CW = 144    // card width
+const CH = 68     // card height
+const SH = 96     // vertical slot per r32 match (card + gap)
+const GX = 64     // horizontal gap between columns (connector zone)
+const CS = CW + GX // column step = 208
+const PAD = 16    // canvas padding
+const LABEL_H = 26 // round-label row height
+
+const MAIN_ROUNDS = ['r32', 'r16', 'qf', 'sf', 'final'] as const
+type MainRound = (typeof MAIN_ROUNDS)[number]
+
+const ROUND_LABELS: Record<MainRound, string> = {
+  r32: '1/16',
+  r16: 'Octavos',
+  qf: 'Cuartos',
+  sf: 'Semis',
+  final: 'Final',
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function winRef(s: string | null | undefined): number | null {
+  if (!s || !s.startsWith('W')) return null
+  const n = parseInt(s.slice(1), 10)
+  return isNaN(n) ? null : n
+}
+
+// ── Layout types ──────────────────────────────────────────────────────────────
+interface MatchPos { match: Match; x: number; y: number }
+interface SVGEdge { x1: number; y1: number; x2: number; y2: number }
+interface Layout {
+  nodes: MatchPos[]
+  edges: SVGEdge[]
+  svgW: number
+  svgH: number
+  third: Match | null
+}
+
+// ── Layout computation ────────────────────────────────────────────────────────
+function computeLayout(matches: Match[]): Layout {
+  const third = matches.find(m => m.phase === 'third') ?? null
+
+  const byNum: Record<number, Match> = {}
+  for (const m of matches) byNum[m.match_number] = m
+
+  const byPhase: Record<string, Match[]> = {}
+  for (const r of MAIN_ROUNDS) {
+    byPhase[r] = matches
+      .filter(m => m.phase === r)
+      .sort((a, b) => a.match_number - b.match_number)
+  }
+
+  // y-position for each match id, relative to canvas content (before PAD)
+  const yOf: Record<number, number> = {}
+
+  // r32: evenly distributed
+  ;(byPhase.r32 ?? []).forEach((m, i) => { yOf[m.id] = i * SH })
+
+  // subsequent rounds: midpoint of two children
+  for (const r of ['r16', 'qf', 'sf', 'final'] as const) {
+    for (const m of byPhase[r] ?? []) {
+      const hN = winRef(m.home_team)
+      const aN = winRef(m.away_team)
+      const hY = hN !== null ? yOf[byNum[hN]?.id] : undefined
+      const aY = aN !== null ? yOf[byNum[aN]?.id] : undefined
+
+      yOf[m.id] =
+        hY !== undefined && aY !== undefined ? (hY + aY) / 2 :
+        hY ?? aY ?? 0
+    }
+  }
+
+  // Positioned nodes
+  const nodes: MatchPos[] = []
+  for (let ri = 0; ri < MAIN_ROUNDS.length; ri++) {
+    for (const m of byPhase[MAIN_ROUNDS[ri]] ?? []) {
+      nodes.push({
+        match: m,
+        x: PAD + ri * CS,
+        y: PAD + (yOf[m.id] ?? 0),
+      })
+    }
+  }
+
+  // SVG connector edges
+  const edges: SVGEdge[] = []
+  for (let ri = 1; ri < MAIN_ROUNDS.length; ri++) {
+    for (const m of byPhase[MAIN_ROUNDS[ri]] ?? []) {
+      const px = PAD + ri * CS
+      const py = PAD + (yOf[m.id] ?? 0)
+      const mx = px - GX / 2   // x of vertical bar
+      const pcy = py + CH / 2  // parent card center y
+
+      const hN = winRef(m.home_team)
+      const aN = winRef(m.away_team)
+      const hChild = hN !== null ? byNum[hN] : null
+      const aChild = aN !== null ? byNum[aN] : null
+
+      if (hChild) {
+        const cY = PAD + (yOf[hChild.id] ?? 0) + CH / 2
+        edges.push({ x1: PAD + (ri - 1) * CS + CW, y1: cY, x2: mx, y2: cY })
+      }
+      if (aChild) {
+        const cY = PAD + (yOf[aChild.id] ?? 0) + CH / 2
+        edges.push({ x1: PAD + (ri - 1) * CS + CW, y1: cY, x2: mx, y2: cY })
+      }
+      if (hChild && aChild) {
+        const hCY = PAD + (yOf[hChild.id] ?? 0) + CH / 2
+        const aCY = PAD + (yOf[aChild.id] ?? 0) + CH / 2
+        edges.push({ x1: mx, y1: hCY, x2: mx, y2: aCY })
+      }
+      // line from vertical bar to parent card left edge
+      edges.push({ x1: mx, y1: pcy, x2: px, y2: pcy })
+    }
+  }
+
+  const r32Cnt = byPhase.r32?.length ?? 0
+  const svgH = r32Cnt > 0
+    ? PAD * 2 + (r32Cnt - 1) * SH + CH
+    : CH + PAD * 2
+  // last column needs no right gap
+  const svgW = PAD * 2 + MAIN_ROUNDS.length * CW + (MAIN_ROUNDS.length - 1) * GX
+
+  return { nodes, edges, svgW, svgH, third }
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 interface Props {
   initialMatches: Match[]
   initialPredictions: BracketPrediction[]
 }
 
-type TabKey = 'r32' | 'r16' | 'qf' | 'sf_final'
-
 export default function BracketClient({ initialMatches, initialPredictions }: Props) {
-  const [activeTab, setActiveTab] = useState<TabKey>('r32')
+  const [predictions, setPredictions] = useState<Record<number, string>>(() => {
+    const map: Record<number, string> = {}
+    for (const p of initialPredictions) map[p.match_id] = p.predicted_winner
+    return map
+  })
   const [isPending, startTransition] = useTransition()
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
 
-  // Map of match_id -> predicted_winner string
-  const [predictions, setPredictions] = useState<Record<number, string>>(() => {
-    const map: Record<number, string> = {}
-    for (const p of initialPredictions) {
-      map[p.match_id] = p.predicted_winner
-    }
-    return map
-  })
-
-  const isTournamentStarted = new Date() > new Date('2026-06-11T00:00:00-04:00')
-  // We can also have a specific date for bracket locking, e.g. July 10, but we use tournament start for now or a custom one if specified. 
-  // CLAUDE.md mentions bracket locks before the first match of 1/16, around July 8-10.
-  // For safety, let's use July 8, 2026.
   const isBracketLocked = new Date() > new Date('2026-07-08T00:00:00-04:00')
 
-  // Recursive team resolution logic
-  const resolveTeam = useCallback((teamString: string): string => {
-    if (!teamString) return 'TBD'
-    
-    // Format: 'W73' (Winner of match 73)
-    if (teamString.startsWith('W')) {
-      const matchNum = parseInt(teamString.substring(1), 10)
-      const match = initialMatches.find((m) => m.match_number === matchNum)
-      if (match && predictions[match.id]) {
-        return predictions[match.id]
-      }
+  const resolveTeam = useCallback((teamStr: string): string => {
+    if (!teamStr) return 'TBD'
+    if (teamStr.startsWith('W')) {
+      const n = parseInt(teamStr.slice(1), 10)
+      const match = initialMatches.find(m => m.match_number === n)
+      if (match && predictions[match.id]) return predictions[match.id]
+      return teamStr
     }
-    
-    // Format: 'L101' (Loser of match 101)
-    if (teamString.startsWith('L')) {
-      const matchNum = parseInt(teamString.substring(1), 10)
-      const match = initialMatches.find((m) => m.match_number === matchNum)
+    if (teamStr.startsWith('L')) {
+      const n = parseInt(teamStr.slice(1), 10)
+      const match = initialMatches.find(m => m.match_number === n)
       if (match && predictions[match.id]) {
-        const pHome = resolveTeam(match.home_team)
-        const pAway = resolveTeam(match.away_team)
-        const winner = predictions[match.id]
-        if (winner === pHome) return pAway
-        if (winner === pAway) return pHome
+        const h = resolveTeam(match.home_team)
+        const a = resolveTeam(match.away_team)
+        const w = predictions[match.id]
+        if (w === h) return a
+        if (w === a) return h
       }
+      return teamStr
     }
-    
-    return teamString // Default to whatever is in DB
+    return teamStr
   }, [initialMatches, predictions])
 
-  const handleSelectWinner = (matchId: number, winnerName: string) => {
+  const handleSelect = (matchId: number, team: string) => {
     if (isBracketLocked) return
-    if (!winnerName || winnerName === 'TBD' || winnerName.startsWith('W') || winnerName.startsWith('L')) {
-      return // Cannot select a placeholder
-    }
-    setPredictions((prev) => ({ ...prev, [matchId]: winnerName }))
+    if (!team || team === 'TBD' || team.startsWith('W') || team.startsWith('L')) return
+    setPredictions(prev => ({ ...prev, [matchId]: team }))
     setResult(null)
   }
 
   const handleSave = () => {
     if (isBracketLocked) return
-
-    // Re-validate all predictions before saving to avoid saving orphans.
-    const validPayload = initialMatches.map((m) => {
+    const payload = initialMatches.map(m => {
       const home = resolveTeam(m.home_team)
       const away = resolveTeam(m.away_team)
       const pred = predictions[m.id]
-      
-      if (pred && (pred === home || pred === away) && !pred.startsWith('W') && !pred.startsWith('L') && pred !== 'TBD') {
+      if (
+        pred &&
+        (pred === home || pred === away) &&
+        !pred.startsWith('W') &&
+        !pred.startsWith('L') &&
+        pred !== 'TBD'
+      ) {
         return { match_id: m.id, predicted_winner: pred }
       }
       return null
     }).filter(Boolean) as { match_id: number; predicted_winner: string }[]
 
     startTransition(async () => {
-      const res = await saveBracketPredictions(validPayload)
+      const res = await saveBracketPredictions(payload)
       setResult(res)
     })
   }
 
-  // Filter matches by phase
-  const matchesByPhase = {
-    r32: initialMatches.filter((m) => m.phase === 'r32'),
-    r16: initialMatches.filter((m) => m.phase === 'r16'),
-    qf: initialMatches.filter((m) => m.phase === 'qf'),
-    sf_final: initialMatches.filter((m) => ['sf', 'third', 'final'].includes(m.phase)),
-  }
+  const { nodes, edges, svgW, svgH, third } = useMemo(
+    () => computeLayout(initialMatches),
+    [initialMatches]
+  )
 
-  const tabs: { id: TabKey; label: string; count: number }[] = [
-    { id: 'r32', label: 'Dieciseisavos (1/16)', count: 16 },
-    { id: 'r16', label: 'Octavos (1/8)', count: 8 },
-    { id: 'qf', label: 'Cuartos (1/4)', count: 4 },
-    { id: 'sf_final', label: 'Semis y Final', count: 4 },
-  ]
+  // ── Card renderer ─────────────────────────────────────────────────────────
+  const renderCard = (match: Match) => {
+    const home = resolveTeam(match.home_team)
+    const away = resolveTeam(match.away_team)
+    const pred = predictions[match.id]
+    const winner = pred === home || pred === away ? pred : null
 
-  // Render a match card
-  const renderMatchCard = (match: Match) => {
-    const resolvedHome = resolveTeam(match.home_team)
-    const resolvedAway = resolveTeam(match.away_team)
-    const currentPred = predictions[match.id]
+    const canPick = (t: string) =>
+      !isBracketLocked && !!t && t !== 'TBD' && !t.startsWith('W') && !t.startsWith('L')
 
-    // Validate if current prediction is actually valid (one of the resolved teams)
-    const isPredValid = currentPred === resolvedHome || currentPred === resolvedAway
-    const safePred = isPredValid ? currentPred : null
-
-    // Determine if team buttons can be clicked
-    const canSelectHome = !isBracketLocked && resolvedHome && !resolvedHome.startsWith('W') && !resolvedHome.startsWith('L') && resolvedHome !== 'TBD'
-    const canSelectAway = !isBracketLocked && resolvedAway && !resolvedAway.startsWith('W') && !resolvedAway.startsWith('L') && resolvedAway !== 'TBD'
+    const rowBase = 'flex items-center w-full h-1/2 px-2.5 text-xs font-medium transition-colors overflow-hidden'
 
     return (
-      <div key={match.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm transition-all hover:border-skyblue/50">
-        <div className="flex items-center justify-between px-3 pt-2 pb-1 bg-gray-50/50 border-b border-gray-100">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-            {match.phase === 'third' ? 'Tercer Puesto' : match.phase === 'final' ? 'Gran Final' : `Partido ${match.match_number}`}
-          </span>
-          {isBracketLocked && <Lock className="w-3 h-3 text-gray-400" />}
-        </div>
-        
-        <div className="flex flex-col">
-          {/* Home Team Button */}
-          <button
-            onClick={() => canSelectHome && handleSelectWinner(match.id, resolvedHome)}
-            disabled={!canSelectHome}
-            className={`
-              flex items-center justify-between px-4 py-3 border-b border-gray-100 transition-colors
-              ${safePred === resolvedHome ? 'bg-skyblue/10 text-navy font-bold' : 'bg-white text-gray-700 hover:bg-gray-50'}
-              ${!canSelectHome ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
-            `}
-          >
-            <span className="text-sm truncate">{teamEs(resolvedHome)}</span>
-            {safePred === resolvedHome && <CheckCircle className="w-4 h-4 text-skyblue" />}
-          </button>
-          
-          {/* Away Team Button */}
-          <button
-            onClick={() => canSelectAway && handleSelectWinner(match.id, resolvedAway)}
-            disabled={!canSelectAway}
-            className={`
-              flex items-center justify-between px-4 py-3 transition-colors
-              ${safePred === resolvedAway ? 'bg-skyblue/10 text-navy font-bold' : 'bg-white text-gray-700 hover:bg-gray-50'}
-              ${!canSelectAway ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
-            `}
-          >
-            <span className="text-sm truncate">{teamEs(resolvedAway)}</span>
-            {safePred === resolvedAway && <CheckCircle className="w-4 h-4 text-skyblue" />}
-          </button>
-        </div>
+      <div className="flex flex-col h-full overflow-hidden rounded-lg border border-[#1E3A6E] bg-[#071729]">
+        <button
+          onClick={() => canPick(home) && handleSelect(match.id, home)}
+          disabled={!canPick(home)}
+          className={[
+            rowBase,
+            'border-b border-[#1E3A6E]',
+            winner === home ? 'bg-skyblue/20 text-skyblue font-bold' : 'text-gray-300 hover:bg-[#0D1F3C]',
+            !canPick(home) ? 'cursor-default' : 'cursor-pointer',
+          ].join(' ')}
+        >
+          <span className="truncate min-w-0 flex-1">{teamEs(home)}</span>
+          {winner === home && <CheckCircle className="w-3 h-3 text-skyblue ml-1 shrink-0" />}
+        </button>
+
+        <button
+          onClick={() => canPick(away) && handleSelect(match.id, away)}
+          disabled={!canPick(away)}
+          className={[
+            rowBase,
+            winner === away ? 'bg-skyblue/20 text-skyblue font-bold' : 'text-gray-300 hover:bg-[#0D1F3C]',
+            !canPick(away) ? 'cursor-default' : 'cursor-pointer',
+          ].join(' ')}
+        >
+          <span className="truncate min-w-0 flex-1">{teamEs(away)}</span>
+          {winner === away && <CheckCircle className="w-3 h-3 text-skyblue ml-1 shrink-0" />}
+        </button>
       </div>
     )
   }
 
-  return (
-    <div className="space-y-6 pb-20">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <GitMerge className="w-6 h-6 text-skyblue" />
-            Bracket Eliminatorio
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Pronostica el camino hacia la gran final. Haz clic en el ganador de cada llave para avanzarlo.
-          </p>
-        </div>
+  const canvasH = svgH + LABEL_H
 
-        {/* Tab Navigation */}
-        <div className="flex p-1 bg-[#020B18] border border-[#1E3A6E]/40 rounded-lg shrink-0 overflow-x-auto hide-scrollbar">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`
-                px-4 py-2 rounded-md text-sm font-semibold transition-colors whitespace-nowrap
-                ${activeTab === tab.id ? 'bg-[#071729] text-white shadow-sm border border-[#1E3A6E]/50' : 'text-gray-500 hover:text-gray-300'}
-              `}
+  return (
+    <div className="space-y-6 pb-24">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-white">Bracket Eliminatorio</h1>
+        <p className="text-sm text-gray-400 mt-1">
+          {isBracketLocked
+            ? 'El bracket está bloqueado.'
+            : 'Haz clic en el equipo ganador para avanzarlo al siguiente cruce.'}
+        </p>
+      </div>
+
+      {/* Bracket canvas */}
+      <div className="overflow-auto rounded-xl border border-[#1E3A6E]/40">
+        <div className="relative" style={{ width: svgW, height: canvasH }}>
+
+          {/* Round labels */}
+          {MAIN_ROUNDS.map((r, ri) => (
+            <div
+              key={r}
+              className="absolute top-0 flex items-center justify-center text-[10px] font-bold text-skyblue/70 uppercase tracking-wider"
+              style={{ left: PAD + ri * CS, width: CW, height: LABEL_H }}
             >
-              {tab.label}
-            </button>
+              {ROUND_LABELS[r]}
+            </div>
+          ))}
+
+          {/* SVG connector lines */}
+          <svg
+            className="absolute pointer-events-none"
+            style={{ top: LABEL_H, left: 0 }}
+            width={svgW}
+            height={svgH}
+          >
+            {edges.map((e, i) => (
+              <line
+                key={i}
+                x1={e.x1} y1={e.y1}
+                x2={e.x2} y2={e.y2}
+                stroke="#64AFE6"
+                strokeWidth={1.5}
+                opacity={0.3}
+                strokeLinecap="round"
+              />
+            ))}
+          </svg>
+
+          {/* Match cards */}
+          {nodes.map(({ match, x, y }) => (
+            <div
+              key={match.id}
+              className="absolute"
+              style={{ left: x, top: y + LABEL_H, width: CW, height: CH }}
+            >
+              {renderCard(match)}
+            </div>
           ))}
         </div>
       </div>
 
-      {/* Grid of Matches */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {matchesByPhase[activeTab].map(renderMatchCard)}
-      </div>
+      {/* Third place */}
+      {third && (
+        <div>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+            Tercer Puesto
+          </p>
+          <div style={{ width: CW, height: CH }}>
+            {renderCard(third)}
+          </div>
+        </div>
+      )}
 
-      {/* Floating Save Bar */}
+      {/* Save bar */}
       <div className="fixed bottom-[80px] sm:bottom-0 left-0 right-0 sm:left-64 bg-[#071729] border-t border-[#1E3A6E]/60 p-4 shadow-lg z-40">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex-1">
@@ -209,11 +337,12 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
               </div>
             ) : (
               <p className="text-xs text-gray-500">
-                {isBracketLocked ? 'El bracket se encuentra bloqueado.' : 'No olvides guardar tu bracket antes de que inicien los partidos.'}
+                {isBracketLocked
+                  ? 'El bracket se encuentra bloqueado.'
+                  : 'Guarda tu bracket antes de que inicien los partidos eliminatorios.'}
               </p>
             )}
           </div>
-
           {!isBracketLocked && (
             <button
               onClick={handleSave}
