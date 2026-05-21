@@ -175,12 +175,12 @@ function MatchCard({ match, homeScore, awayScore, onHomeChange, onAwayChange }: 
 
       {/* Date + Venue */}
       <div className="flex flex-col gap-1 px-4 pb-3 border-t border-white/6 pt-2">
-        <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
+        <div className="flex items-center gap-1.5 text-[12px] text-[#9CA3AF]">
           <Calendar className="w-3 h-3 shrink-0 text-skyblue/60" />
           <span>{formatDate(match.match_date)} · {formatTime(match.match_date)} (UTC-4)</span>
         </div>
         {match.venue && (
-          <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
+          <div className="flex items-center gap-1.5 text-[12px] text-[#9CA3AF]">
             <MapPin className="w-3 h-3 shrink-0 text-skyblue/60" />
             <span className="truncate">{match.venue}</span>
           </div>
