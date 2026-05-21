@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { CheckCircle, AlertCircle } from 'lucide-react'
 import type { Match } from '@/types'
 import { updateMatchResult } from '../actions'
+import { teamEs } from '@/lib/i18n/teams'
 
 export default function AdminMatchesClient({ initialMatches }: { initialMatches: Match[] }) {
   const [matches, setMatches] = useState<Match[]>(initialMatches)
@@ -77,7 +78,7 @@ export default function AdminMatchesClient({ initialMatches }: { initialMatches:
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <span className="w-24 text-right font-medium">{m.home_team}</span>
+                        <span className="w-24 text-right font-medium">{teamEs(m.home_team)}</span>
                         <input 
                           type="number"
                           min={0}
@@ -93,7 +94,7 @@ export default function AdminMatchesClient({ initialMatches }: { initialMatches:
                           onChange={(e) => handleScoreChange(m.id, 'away', e.target.value)}
                           className="w-12 h-8 text-center border border-gray-300 rounded focus:border-skyblue focus:ring-1 focus:ring-skyblue outline-none"
                         />
-                        <span className="w-24 font-medium">{m.away_team}</span>
+                        <span className="w-24 font-medium">{teamEs(m.away_team)}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center">

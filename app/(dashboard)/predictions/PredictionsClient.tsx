@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import type { Match, Prediction, SpecialPrediction } from '@/types'
 import { saveGroupPredictions, saveSpecialPredictions, SpecialPredictionPayload } from './actions'
+import { teamEs } from '@/lib/i18n/teams'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -142,7 +143,7 @@ function MatchCard({ match, homeScore, awayScore, onHomeChange, onAwayChange }: 
         <div className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
           <span className="text-3xl leading-none">{match.home_flag ?? '🏳️'}</span>
           <span className="text-xs font-semibold text-navy text-center leading-tight truncate w-full">
-            {match.home_team}
+            {teamEs(match.home_team)}
           </span>
         </div>
 
@@ -167,7 +168,7 @@ function MatchCard({ match, homeScore, awayScore, onHomeChange, onAwayChange }: 
         <div className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
           <span className="text-3xl leading-none">{match.away_flag ?? '🏳️'}</span>
           <span className="text-xs font-semibold text-navy text-center leading-tight truncate w-full">
-            {match.away_team}
+            {teamEs(match.away_team)}
           </span>
         </div>
       </div>

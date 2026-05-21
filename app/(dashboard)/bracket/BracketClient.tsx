@@ -4,6 +4,7 @@ import { useState, useTransition, useCallback } from 'react'
 import { Trophy, GitMerge, Loader2, Save, CheckCircle, AlertCircle, Lock } from 'lucide-react'
 import type { Match, BracketPrediction, MatchPhase } from '@/types'
 import { saveBracketPredictions } from './actions'
+import { teamEs } from '@/lib/i18n/teams'
 
 interface Props {
   initialMatches: Match[]
@@ -140,7 +141,7 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
               ${!canSelectHome ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
             `}
           >
-            <span className="text-sm truncate">{resolvedHome}</span>
+            <span className="text-sm truncate">{teamEs(resolvedHome)}</span>
             {safePred === resolvedHome && <CheckCircle className="w-4 h-4 text-skyblue" />}
           </button>
           
@@ -154,7 +155,7 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
               ${!canSelectAway ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
             `}
           >
-            <span className="text-sm truncate">{resolvedAway}</span>
+            <span className="text-sm truncate">{teamEs(resolvedAway)}</span>
             {safePred === resolvedAway && <CheckCircle className="w-4 h-4 text-skyblue" />}
           </button>
         </div>
