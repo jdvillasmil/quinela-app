@@ -2,7 +2,8 @@
 
 ## Estado del proyecto
 
-> Última actualización: 20 mayo 2026 · Faltan **22 días** para el inicio del torneo (11 jun)
+> Última actualización: 20 mayo 2026 · Faltan **22 días** para el inicio del torneo (11 jun)  
+> Auditoría de producción completada — todas las rutas cargan sin errores de consola ni requests fallidos a Supabase
 
 ### Completado
 
@@ -30,23 +31,25 @@
 | Sprint 5 | Cliente API-Football (`lib/api-football/client.ts`) + Endpoint CRON job (`app/api/cron/update-matches/route.ts`) | 20 may 2026 |
 | Sprint 6 | Deploy en Vercel (https://quinela-app.vercel.app) + Variables de entorno de producción | 20 may 2026 |
 | Sprint 6 | Archivo `vercel.json` con la orquestación del background cron job para ejecutarse cada 5 minutos | 20 may 2026 |
-
-### Tareas Críticas Actuales (Próximos pasos inmediatos)
-
-1. **Resolver carga de datos en producción:**
-   - Diagnosticar por qué el cliente de Supabase en las vistas del dashboard, reglas de negocio y predicciones no está pintando/renderizando los partidos ni los datos del objeto de negocio en el entorno de producción.
-2. **Crear la ruta estática `/profile`:**
-   - Crear el archivo `app/(dashboard)/profile/page.tsx` para renderizar la información del perfil del usuario logueado (username, email, nombre, apellido, rol) y evitar el error 404 del botón del menú de navegación.
+| Sprint 3 | Layout dashboard (navbar + bottom nav) | 20 may 2026 |
+| Sprint 3 | Pantalla de predicciones de grupos (48 partidos + 1°/2° por grupo) | 20 may 2026 |
+| Sprint 3 | Pantalla de predicciones especiales (7 campos) | 20 may 2026 |
+| Sprint 4 | Bracket eliminatorio con tabs por ronda (1/16, 1/8, 1/4, Semis/Final) | 20 may 2026 |
+| Sprint 5 | Panel de admin (`/admin`) — métricas, gestión de partidos, usuarios, export CSV | 20 may 2026 |
+| Sprint 6 | Auditoría producción: 0 errores consola, datos cargando via RSC, TypeScript limpio | 20 may 2026 |
+| Sprint 6 | Ruta `/profile` — muestra username, email, nombre, apellido, rol, fecha de registro | 20 may 2026 |
+| Sprint 6 | Fix `total_goals` input: atributos `min=0 max=500` en Premios Especiales | 20 may 2026 |
+| Sprint 6 | Favicon SVG isotipo Proyelec (`public/favicon.svg`) registrado en metadata | 20 may 2026 |
+| Sprint 6 | Excluir admins del leaderboard — `where pr.role = 'user'` en `get_leaderboard()` (`migrations/20260521000001`) | 21 may 2026 |
+| Sprint 6 | Nombres de países en español — `lib/i18n/teams.ts` (48 equipos EN→ES); aplicado en predicciones, bracket y admin matches | 21 may 2026 |
+| Sprint 6 | Pantalla de normas obligatoria — modal con reglas + checkbox; `rules_accepted_at` en `profiles` (`migrations/20260521000002`) | 21 may 2026 |
 
 ### Pendiente (orden de prioridad)
 
-| Sprint | Entregable |
-|---|---|
-| Sprint 3 | Layout dashboard (navbar + bottom nav) |
-| Sprint 3 | Pantalla de predicciones de grupos (48 partidos + 1°/2° por grupo) |
-| Sprint 3 | Pantalla de predicciones especiales |
-| Sprint 4 | Bracket eliminatorio |
-| Sprint 5 | Panel de admin (`/admin`) |
+| # | Entregable | Notas |
+|---|---|---|
+| 1 | **Verificar emojis de banderas** — comprobar que los 48 equipos tienen emoji correcto en `matches.home_flag / away_flag`; reemplazar faltantes con código ISO | Auditar seed SQL; corregir en migración si hace falta |
+| 2 | **Tabla de posiciones por grupo en `/predictions`** — se actualiza en tiempo real conforme el usuario llena los marcadores, mostrando clasificados simulados y posibles enfrentamientos de eliminatoria | Lógica client-side pura, sin llamadas extra a Supabase; derivada del estado del formulario |
 
 ---
 

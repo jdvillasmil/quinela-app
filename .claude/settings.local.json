@@ -4,7 +4,10 @@
       "WebSearch",
       "Bash(npx tsc *)",
       "mcp__plugin_chrome-devtools-mcp_chrome-devtools__new_page",
-      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_screenshot"
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_screenshot",
+      "PowerShell(git commit *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'feat\\(leaderboard\\): exclude admin users from ranking *)"
     ]
   }
 }

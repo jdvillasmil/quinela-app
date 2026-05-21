@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { BottomNav, DesktopNav } from './navigation'
 import UserMenu from './user-menu'
+import RulesModal from './rules-modal'
 import type { Profile } from '@/types'
 
 export default async function DashboardLayout({
@@ -76,6 +77,9 @@ export default async function DashboardLayout({
 
       {/* Mobile Bottom Navigation */}
       <BottomNav />
+
+      {/* Mandatory rules modal — shown until user accepts */}
+      <RulesModal open={!profile?.rules_accepted_at} />
     </div>
   )
 }

@@ -11,6 +11,7 @@ export interface Profile {
   role: UserRole
   avatar_url: string | null
   created_at: string
+  rules_accepted_at: string | null
 }
 
 export interface Match {
