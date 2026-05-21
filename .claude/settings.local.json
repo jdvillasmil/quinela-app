@@ -7,7 +7,9 @@
       "mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_screenshot",
       "PowerShell(git commit *)",
       "Bash(git add *)",
-      "Bash(git commit -m 'feat\\(leaderboard\\): exclude admin users from ranking *)"
+      "Bash(git commit -m 'feat\\(leaderboard\\): exclude admin users from ranking *)",
+      "PowerShell(npx tsc --noEmit 2>&1)",
+      "PowerShell(git push *)"
     ]
   }
 }
