@@ -469,6 +469,23 @@ export default function PredictionsClient({ groupData, groups, specialPrediction
 
       {mainTab === 'groups' ? (
         <>
+          {/* Premios Especiales banner */}
+          <button
+            onClick={() => setMainTab('special')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-skyblue/40 bg-skyblue/10 hover:bg-skyblue/15 transition-all duration-200 cursor-pointer group"
+          >
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-skyblue opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-skyblue" />
+            </span>
+            <span className="flex-1 text-left text-sm font-semibold text-skyblue">
+              ¡No olvides tus Premios Especiales!
+            </span>
+            <span className="text-xs font-medium text-skyblue/70 group-hover:text-skyblue transition-colors">
+              Ir ahora →
+            </span>
+          </button>
+
           {/* Group Selector Tabs */}
           <div className="bg-[#020B18] rounded-xl border border-[#1E3A6E]/40 p-1">
             <div className="flex flex-wrap gap-1">
