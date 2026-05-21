@@ -8,7 +8,7 @@ export async function acceptRules() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
-  await supabase
+  await (supabase as any)
     .from('profiles')
     .update({ rules_accepted_at: new Date().toISOString() })
     .eq('id', user.id)

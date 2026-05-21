@@ -90,31 +90,37 @@ export type Database = {
         Row: Profile
         Insert: Omit<Profile, 'created_at'>
         Update: Partial<Omit<Profile, 'id'>>
+        Relationships: []
       }
       matches: {
         Row: Match
         Insert: Omit<Match, 'id'>
         Update: Partial<Omit<Match, 'id'>>
+        Relationships: []
       }
       predictions: {
         Row: Prediction
         Insert: Omit<Prediction, 'id' | 'created_at'>
         Update: Partial<Pick<Prediction, 'predicted_home' | 'predicted_away' | 'points_earned'>>
+        Relationships: []
       }
       group_predictions: {
         Row: GroupPrediction
         Insert: Omit<GroupPrediction, 'id'>
         Update: Partial<Omit<GroupPrediction, 'id' | 'user_id'>>
+        Relationships: []
       }
       special_predictions: {
         Row: SpecialPrediction
         Insert: Omit<SpecialPrediction, 'id' | 'created_at'>
         Update: Partial<Omit<SpecialPrediction, 'id' | 'user_id' | 'created_at'>>
+        Relationships: []
       }
       bracket_predictions: {
         Row: BracketPrediction
         Insert: Omit<BracketPrediction, 'id'>
         Update: Partial<Pick<BracketPrediction, 'predicted_winner' | 'points_earned'>>
+        Relationships: []
       }
     }
     Views: Record<string, never>
