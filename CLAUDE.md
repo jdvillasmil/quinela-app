@@ -48,17 +48,24 @@
 | Sprint 3 | Badge prominente "Premios Especiales" con animación pulse sobre formulario de predicciones especiales | 22 may 2026 |
 | Sprint 3 | Texto de horario/estadio más legible en predicciones — color `#9CA3AF` a 12px | 22 may 2026 |
 | Sprint 6 | Dark theme completo con identidad Proyelec (`#00205E` / `#64AFE6`) aplicado en todas las pantallas | 22 may 2026 |
+| QA | QA Fase 1: sistema de puntuación verificado — resultado exacto +5pts ✓, signo 1X2 +1pt, diferencia de goles +1pt | 22 may 2026 |
+| QA | Tabla de clasificación por grupo calculada automáticamente con reglas FIFA (puntos, diferencia de goles, goles a favor) | 22 may 2026 |
+| QA | 1° y 2° lugar del grupo derivados automáticamente de los marcadores del formulario (client-side, sin llamadas extra a Supabase) | 22 may 2026 |
+| QA | `calculate_match_points` se ejecuta automáticamente al guardar resultado desde panel admin | 22 may 2026 |
+| QA | Admin excluido del leaderboard verificado en QA — confirmado con `get_leaderboard()` | 22 may 2026 |
+
+> **Nota:** rama `qa/simulation` lista para merge a `main` — QA Fase 1 completada.
 
 ### Pendiente (orden de prioridad)
 
 | # | Entregable | Notas |
 |---|---|---|
-| 1 | **QA Branch — Fase de grupos completa** — cargar resultados de los 48 partidos, verificar cálculo de puntos por partido (1X2, diff, exacto) y por clasificados de grupo | Rama separada; seed de resultados ficticios; comparar contra puntuación esperada manualmente |
-| 2 | **QA Branch — Fase eliminatoria** — simular bracket completo, verificar escala de puntos por ronda (r32→final), lógica de `bracket_predictions` | Continuación de la rama QA de grupos |
-| 3 | **QA Branch — Simulación end-to-end** — ciclo completo: registro → predicciones → resultados → puntos → leaderboard → especiales resueltos | Validar que el leaderboard acumula correctamente y RLS no bloquea flujos legítimos |
-| 4 | **Verificar emojis de banderas** — comprobar que los 48 equipos tienen emoji correcto en `matches.home_flag / away_flag`; reemplazar faltantes con código ISO | Auditar seed SQL; corregir en migración si hace falta |
-| 5 | **Tabla de posiciones por grupo en `/predictions`** — se actualiza en tiempo real conforme el usuario llena los marcadores, mostrando clasificados simulados y posibles enfrentamientos de eliminatoria | Lógica client-side pura, sin llamadas extra a Supabase; derivada del estado del formulario |
-| 6 | **Rediseño con Stitch de pantallas secundarias** — aplicar nuevo sistema visual a `/leaderboard`, `/profile`, `/bracket` y pantallas de admin | Basarse en identidad Proyelec existente; Stitch como guía de componentes |
+| 1 | **Fix UX: ocultar texto "Completa todos los marcadores"** cuando todos los marcadores del grupo estén llenos (6/6) | Lógica client-side; condicional sobre el estado del formulario del grupo |
+| 2 | **Fix Admin: `pendingMatchId` por partido** en vez de `useTransition` global — evita que el loading state bloquee todos los partidos simultáneamente | Refactor del componente de gestión de resultados en `/admin/matches` |
+| 3 | **QA Fase 2 — Fase eliminatoria** — simular bracket completo, verificar escala de puntos por ronda (r32→final), lógica de `bracket_predictions` | Continuación de la rama QA; seed de resultados de eliminatoria |
+| 4 | **QA Fase 3 — Simulación end-to-end completa** — ciclo completo: registro → predicciones → resultados → puntos → leaderboard → especiales resueltos | Validar que el leaderboard acumula correctamente y RLS no bloquea flujos legítimos |
+| 5 | **Verificar emojis de banderas** — comprobar que los 48 equipos tienen emoji correcto en `matches.home_flag / away_flag`; reemplazar faltantes con código ISO | Auditar seed SQL; corregir en migración si hace falta |
+| 6 | **Ajustes visuales con Gemini y Stitch** — aplicar nuevo sistema visual a `/leaderboard`, `/profile`, `/bracket` y pantallas de admin | Basarse en identidad Proyelec existente; Stitch como guía de componentes |
 
 ---
 
