@@ -5,6 +5,25 @@ import { Trophy, Activity } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { LeaderboardEntry } from '@/types'
 
+const LS_KEY = 'leaderboard_positions'
+
+function getMovement(username: string, currentRank: number, prev: Record<string, number>): number | null {
+  if (!(username in prev)) return null
+  return prev[username] - currentRank // positive = moved up, negative = moved down
+}
+
+function MovementBadge({ delta }: { delta: number | null }) {
+  if (delta === null || delta === 0) return (
+    <span className="text-xs text-gray-600 tabular-nums w-10 inline-block text-center">—</span>
+  )
+  if (delta > 0) return (
+    <span className="text-xs font-semibold text-emerald-400 tabular-nums w-10 inline-block text-center">▲{delta}</span>
+  )
+  return (
+    <span className="text-xs font-semibold text-red-400 tabular-nums w-10 inline-block text-center">▼{Math.abs(delta)}</span>
+  )
+}
+
 export default function LeaderboardClient({
   initialData,
   currentUserId
@@ -14,7 +33,22 @@ export default function LeaderboardClient({
 }) {
   const [data, setData] = useState<LeaderboardEntry[]>(initialData)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [prevPositions, setPrevPositions] = useState<Record<string, number>>({})
   const supabase = createClient()
+
+  useEffect(() => {
+    let stored: Record<string, number> = {}
+    try {
+      const raw = localStorage.getItem(LS_KEY)
+      if (raw) stored = JSON.parse(raw)
+    } catch { /* ignore */ }
+    setPrevPositions(stored)
+
+    // Save current ranking as the new baseline for next visit
+    const current: Record<string, number> = {}
+    for (const entry of initialData) current[entry.username] = entry.rank
+    try { localStorage.setItem(LS_KEY, JSON.stringify(current)) } catch { /* ignore */ }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchLeaderboard = useCallback(async () => {
     setIsUpdating(true)
@@ -81,7 +115,7 @@ export default function LeaderboardClient({
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-[#030A15] border-b border-[#1E3A6E]/50 text-gray-500 font-semibold text-xs uppercase tracking-wider">
               <tr>
-                <th className="px-6 py-4 text-center w-16">Pos</th>
+                <th className="px-6 py-4 text-center w-28">Pos</th>
                 <th className="px-6 py-4">Usuario</th>
                 <th className="px-6 py-4 text-center">Grupos</th>
                 <th className="px-6 py-4 text-center">Eliminatorias</th>
@@ -92,6 +126,7 @@ export default function LeaderboardClient({
             <tbody className="divide-y divide-[#1E3A6E]/30">
               {data.map((entry) => {
                 const isMe = entry.user_id === currentUserId
+                const delta = getMovement(entry.username, entry.rank, prevPositions)
                 return (
                   <tr
                     key={entry.user_id}
@@ -101,8 +136,11 @@ export default function LeaderboardClient({
                         : 'hover:bg-white/4 border-l-2 border-l-transparent'
                     }`}
                   >
-                    <td className="px-6 py-4 text-center">
-                      {getRankBadge(entry.rank)}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-1.5">
+                        {getRankBadge(entry.rank)}
+                        <MovementBadge delta={delta} />
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
