@@ -191,6 +191,73 @@ function MatchCard({ match, homeScore, awayScore, onHomeChange, onAwayChange }: 
   )
 }
 
+// ─── Group Standings ──────────────────────────────────────────────────────────
+
+interface TeamStats {
+  team: string
+  flag: string
+  played: number
+  won: number
+  drawn: number
+  lost: number
+  goalsFor: number
+  goalsAgainst: number
+  points: number
+}
+
+function computeGroupStandings(
+  matches: MatchWithPrediction[],
+  scores: Record<number, { home: string; away: string }>
+): TeamStats[] {
+  const flagMap: Record<string, string> = {}
+  for (const m of matches) {
+    flagMap[m.home_team] = m.home_flag ?? '🏳️'
+    flagMap[m.away_team] = m.away_flag ?? '🏳️'
+  }
+
+  const stats: Record<string, TeamStats> = {}
+  for (const team of Object.keys(flagMap)) {
+    stats[team] = { team, flag: flagMap[team], played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 }
+  }
+
+  for (const m of matches) {
+    const s = scores[m.id]
+    const h = parseInt(s?.home ?? '', 10)
+    const a = parseInt(s?.away ?? '', 10)
+    if (isNaN(h) || isNaN(a)) continue
+
+    stats[m.home_team].played++
+    stats[m.away_team].played++
+    stats[m.home_team].goalsFor += h
+    stats[m.home_team].goalsAgainst += a
+    stats[m.away_team].goalsFor += a
+    stats[m.away_team].goalsAgainst += h
+
+    if (h > a) {
+      stats[m.home_team].won++
+      stats[m.home_team].points += 3
+      stats[m.away_team].lost++
+    } else if (h < a) {
+      stats[m.away_team].won++
+      stats[m.away_team].points += 3
+      stats[m.home_team].lost++
+    } else {
+      stats[m.home_team].drawn++
+      stats[m.home_team].points++
+      stats[m.away_team].drawn++
+      stats[m.away_team].points++
+    }
+  }
+
+  return Object.values(stats).sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points
+    const gdA = a.goalsFor - a.goalsAgainst
+    const gdB = b.goalsFor - b.goalsAgainst
+    if (gdB !== gdA) return gdB - gdA
+    return b.goalsFor - a.goalsFor
+  })
+}
+
 // ─── Group Panel ──────────────────────────────────────────────────────────────
 
 interface GroupPanelProps {
@@ -199,7 +266,7 @@ interface GroupPanelProps {
   initialStandings: { first_place: string; second_place: string } | null
 }
 
-function GroupPanel({ matches, groupName, initialStandings }: GroupPanelProps) {
+function GroupPanel({ matches, groupName }: GroupPanelProps) {
   const initialScores = () => {
     const map: Record<number, { home: string; away: string }> = {}
     for (const m of matches) {
@@ -211,20 +278,11 @@ function GroupPanel({ matches, groupName, initialStandings }: GroupPanelProps) {
     return map
   }
 
-  const teams = useMemo(() => {
-    const set = new Set<string>()
-    for (const m of matches) {
-      set.add(m.home_team)
-      set.add(m.away_team)
-    }
-    return Array.from(set).sort()
-  }, [matches])
-
   const [scores, setScores] = useState<Record<number, { home: string; away: string }>>(initialScores)
-  const [firstPlace, setFirstPlace] = useState(initialStandings?.first_place ?? '')
-  const [secondPlace, setSecondPlace] = useState(initialStandings?.second_place ?? '')
   const [isPending, startTransition] = useTransition()
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
+
+  const standings = useMemo(() => computeGroupStandings(matches, scores), [matches, scores])
 
   const setHome = useCallback((matchId: number, v: string) => {
     setScores((prev) => ({ ...prev, [matchId]: { ...prev[matchId], home: v } }))
@@ -237,11 +295,6 @@ function GroupPanel({ matches, groupName, initialStandings }: GroupPanelProps) {
   }, [])
 
   function handleSave() {
-    if (firstPlace && secondPlace && firstPlace === secondPlace) {
-      setResult({ success: false, message: 'El 1° y 2° no pueden ser el mismo equipo.' })
-      return
-    }
-
     const payload = matches
       .filter((m) => !isLocked(m))
       .map((m) => {
@@ -255,18 +308,21 @@ function GroupPanel({ matches, groupName, initialStandings }: GroupPanelProps) {
       })
       .filter((p) => !isNaN(p.predicted_home) && !isNaN(p.predicted_away))
 
+    const first = standings[0]?.team ?? ''
+    const second = standings[1]?.team ?? ''
+
     startTransition(async () => {
       const scoresRes = await saveGroupPredictions(payload)
       if (!scoresRes.success) {
         setResult(scoresRes)
         return
       }
-      if (firstPlace && secondPlace) {
-        const standingsRes = await saveGroupStandings({ group_name: groupName, first_place: firstPlace, second_place: secondPlace })
+      if (first && second) {
+        const standingsRes = await saveGroupStandings({ group_name: groupName, first_place: first, second_place: second })
         setResult({
           success: standingsRes.success,
           message: standingsRes.success
-            ? 'Marcadores y clasificados guardados correctamente.'
+            ? 'Predicciones guardadas correctamente.'
             : standingsRes.message,
         })
       } else {
@@ -313,43 +369,64 @@ function GroupPanel({ matches, groupName, initialStandings }: GroupPanelProps) {
         ))}
       </div>
 
-      {/* Group standings selectors */}
-      <div className="p-4 bg-[#0A1E35] rounded-xl border border-[#1E3A6E]/60 space-y-3">
-        <p className="text-xs font-semibold text-skyblue uppercase tracking-wide">
-          Clasificados del Grupo {groupName}
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-300">🥇 1° Lugar</label>
-            <select
-              value={firstPlace}
-              onChange={(e) => { setFirstPlace(e.target.value); setResult(null) }}
-              className="w-full px-3 py-2 bg-[#020B18] border border-[#1E3A6E] text-white text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-skyblue/50 focus:border-skyblue transition-colors"
-            >
-              <option value="">-- Seleccionar --</option>
-              {teams.map((t) => (
-                <option key={t} value={t} disabled={t === secondPlace}>
-                  {teamEs(t)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-300">🥈 2° Lugar</label>
-            <select
-              value={secondPlace}
-              onChange={(e) => { setSecondPlace(e.target.value); setResult(null) }}
-              className="w-full px-3 py-2 bg-[#020B18] border border-[#1E3A6E] text-white text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-skyblue/50 focus:border-skyblue transition-colors"
-            >
-              <option value="">-- Seleccionar --</option>
-              {teams.map((t) => (
-                <option key={t} value={t} disabled={t === firstPlace}>
-                  {teamEs(t)}
-                </option>
-              ))}
-            </select>
-          </div>
+      {/* Live group standings table */}
+      <div className="rounded-xl border border-[#1E3A6E]/60 overflow-hidden">
+        <div className="px-4 py-2.5 bg-[#0A1E35] flex items-center justify-between">
+          <p className="text-xs font-semibold text-skyblue uppercase tracking-wide">
+            Clasificación · Grupo {groupName}
+          </p>
+          <span className="text-[10px] text-gray-500">Se actualiza con tus marcadores</span>
         </div>
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-[#1E3A6E]/40 bg-[#071729]">
+              <th className="px-3 py-2 text-left text-gray-500 font-medium w-6">#</th>
+              <th className="px-3 py-2 text-left text-gray-500 font-medium">Equipo</th>
+              <th className="px-2 py-2 text-center text-gray-500 font-medium w-7" title="Partidos jugados">PJ</th>
+              <th className="px-2 py-2 text-center text-gray-500 font-medium w-7" title="Ganados">G</th>
+              <th className="px-2 py-2 text-center text-gray-500 font-medium w-7" title="Empatados">E</th>
+              <th className="px-2 py-2 text-center text-gray-500 font-medium w-7" title="Perdidos">P</th>
+              <th className="px-2 py-2 text-center text-gray-500 font-medium w-7" title="Goles a favor">GF</th>
+              <th className="px-2 py-2 text-center text-gray-500 font-medium w-7" title="Goles en contra">GC</th>
+              <th className="px-2 py-2 text-center text-gray-500 font-medium w-8" title="Diferencia de goles">DG</th>
+              <th className="px-3 py-2 text-center text-skyblue font-bold w-8">Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {standings.map((s, i) => {
+              const gd = s.goalsFor - s.goalsAgainst
+              return (
+                <tr
+                  key={s.team}
+                  className={`border-b border-[#1E3A6E]/20 last:border-0 transition-colors ${i < 2 ? 'bg-skyblue/5' : 'bg-[#071729]'}`}
+                >
+                  <td className="px-3 py-2.5 text-center font-bold">
+                    {i === 0 ? <span className="text-yellow-400">1</span>
+                      : i === 1 ? <span className="text-gray-300">2</span>
+                      : <span className="text-gray-600">{i + 1}</span>}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-1.5">
+                      {i < 2 && <div className="w-0.5 h-4 bg-skyblue rounded-full" />}
+                      <span>{s.flag}</span>
+                      <span className={i < 2 ? 'text-white font-semibold' : 'text-gray-400'}>{teamEs(s.team)}</span>
+                    </div>
+                  </td>
+                  <td className="px-2 py-2.5 text-center text-gray-400">{s.played}</td>
+                  <td className="px-2 py-2.5 text-center text-gray-400">{s.won}</td>
+                  <td className="px-2 py-2.5 text-center text-gray-400">{s.drawn}</td>
+                  <td className="px-2 py-2.5 text-center text-gray-400">{s.lost}</td>
+                  <td className="px-2 py-2.5 text-center text-gray-400">{s.goalsFor}</td>
+                  <td className="px-2 py-2.5 text-center text-gray-400">{s.goalsAgainst}</td>
+                  <td className={`px-2 py-2.5 text-center font-medium ${gd > 0 ? 'text-emerald-400' : gd < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                    {gd > 0 ? `+${gd}` : gd}
+                  </td>
+                  <td className="px-3 py-2.5 text-center font-bold text-skyblue">{s.points}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
 
       {/* Save button + feedback */}
