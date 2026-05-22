@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useCallback, useTransition } from 'react'
+import { useState, useCallback, useTransition, useMemo } from 'react'
 import {
   Calendar, MapPin, Lock, CheckCircle, AlertCircle, Loader2, Save,
   Trophy, Goal, Shield, Hash, AlertTriangle, Swords, Zap
 } from 'lucide-react'
 import type { Match, Prediction, SpecialPrediction } from '@/types'
-import { saveGroupPredictions, saveSpecialPredictions, SpecialPredictionPayload } from './actions'
+import { saveGroupPredictions, saveGroupStandings, saveSpecialPredictions, SpecialPredictionPayload } from './actions'
 import { teamEs } from '@/lib/i18n/teams'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -23,6 +23,7 @@ interface Props {
   groupData: GroupData
   groups: string[]
   specialPrediction: SpecialPrediction | null
+  groupStandingsData: Record<string, { first_place: string; second_place: string } | null>
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -195,9 +196,10 @@ function MatchCard({ match, homeScore, awayScore, onHomeChange, onAwayChange }: 
 interface GroupPanelProps {
   matches: MatchWithPrediction[]
   groupName: string
+  initialStandings: { first_place: string; second_place: string } | null
 }
 
-function GroupPanel({ matches, groupName }: GroupPanelProps) {
+function GroupPanel({ matches, groupName, initialStandings }: GroupPanelProps) {
   const initialScores = () => {
     const map: Record<number, { home: string; away: string }> = {}
     for (const m of matches) {
@@ -209,7 +211,18 @@ function GroupPanel({ matches, groupName }: GroupPanelProps) {
     return map
   }
 
+  const teams = useMemo(() => {
+    const set = new Set<string>()
+    for (const m of matches) {
+      set.add(m.home_team)
+      set.add(m.away_team)
+    }
+    return Array.from(set).sort()
+  }, [matches])
+
   const [scores, setScores] = useState<Record<number, { home: string; away: string }>>(initialScores)
+  const [firstPlace, setFirstPlace] = useState(initialStandings?.first_place ?? '')
+  const [secondPlace, setSecondPlace] = useState(initialStandings?.second_place ?? '')
   const [isPending, startTransition] = useTransition()
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
 
@@ -224,6 +237,11 @@ function GroupPanel({ matches, groupName }: GroupPanelProps) {
   }, [])
 
   function handleSave() {
+    if (firstPlace && secondPlace && firstPlace === secondPlace) {
+      setResult({ success: false, message: 'El 1° y 2° no pueden ser el mismo equipo.' })
+      return
+    }
+
     const payload = matches
       .filter((m) => !isLocked(m))
       .map((m) => {
@@ -238,8 +256,22 @@ function GroupPanel({ matches, groupName }: GroupPanelProps) {
       .filter((p) => !isNaN(p.predicted_home) && !isNaN(p.predicted_away))
 
     startTransition(async () => {
-      const res = await saveGroupPredictions(payload)
-      setResult(res)
+      const scoresRes = await saveGroupPredictions(payload)
+      if (!scoresRes.success) {
+        setResult(scoresRes)
+        return
+      }
+      if (firstPlace && secondPlace) {
+        const standingsRes = await saveGroupStandings({ group_name: groupName, first_place: firstPlace, second_place: secondPlace })
+        setResult({
+          success: standingsRes.success,
+          message: standingsRes.success
+            ? 'Marcadores y clasificados guardados correctamente.'
+            : standingsRes.message,
+        })
+      } else {
+        setResult(scoresRes)
+      }
     })
   }
 
@@ -279,6 +311,45 @@ function GroupPanel({ matches, groupName }: GroupPanelProps) {
             onAwayChange={(v) => setAway(match.id, v)}
           />
         ))}
+      </div>
+
+      {/* Group standings selectors */}
+      <div className="p-4 bg-[#0A1E35] rounded-xl border border-[#1E3A6E]/60 space-y-3">
+        <p className="text-xs font-semibold text-skyblue uppercase tracking-wide">
+          Clasificados del Grupo {groupName}
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-300">🥇 1° Lugar</label>
+            <select
+              value={firstPlace}
+              onChange={(e) => { setFirstPlace(e.target.value); setResult(null) }}
+              className="w-full px-3 py-2 bg-[#020B18] border border-[#1E3A6E] text-white text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-skyblue/50 focus:border-skyblue transition-colors"
+            >
+              <option value="">-- Seleccionar --</option>
+              {teams.map((t) => (
+                <option key={t} value={t} disabled={t === secondPlace}>
+                  {teamEs(t)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-300">🥈 2° Lugar</label>
+            <select
+              value={secondPlace}
+              onChange={(e) => { setSecondPlace(e.target.value); setResult(null) }}
+              className="w-full px-3 py-2 bg-[#020B18] border border-[#1E3A6E] text-white text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-skyblue/50 focus:border-skyblue transition-colors"
+            >
+              <option value="">-- Seleccionar --</option>
+              {teams.map((t) => (
+                <option key={t} value={t} disabled={t === firstPlace}>
+                  {teamEs(t)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Save button + feedback */}
@@ -425,7 +496,7 @@ function SpecialPredictionsPanel({ initialData, locked }: { initialData: Special
 
 // ─── Main Client Component ────────────────────────────────────────────────────
 
-export default function PredictionsClient({ groupData, groups, specialPrediction }: Props) {
+export default function PredictionsClient({ groupData, groups, specialPrediction, groupStandingsData }: Props) {
   const [activeGroup, setActiveGroup] = useState(groups[0] ?? 'A')
   const [mainTab, setMainTab] = useState<'groups' | 'special'>('groups')
 
@@ -522,6 +593,7 @@ export default function PredictionsClient({ groupData, groups, specialPrediction
               key={activeGroup}
               matches={groupData[activeGroup]}
               groupName={activeGroup}
+              initialStandings={groupStandingsData[activeGroup] ?? null}
             />
           )}
         </>

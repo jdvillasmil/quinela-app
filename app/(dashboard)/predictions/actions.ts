@@ -66,6 +66,52 @@ export async function saveGroupPredictions(
   return { success: true, message: 'Predicciones guardadas correctamente.' }
 }
 
+export interface GroupStandingsPayload {
+  group_name: string
+  first_place: string
+  second_place: string
+}
+
+export async function saveGroupStandings(
+  payload: GroupStandingsPayload
+): Promise<SaveResult> {
+  if (!payload.first_place || !payload.second_place) {
+    return { success: false, message: 'Selecciona 1° y 2° del grupo.' }
+  }
+  if (payload.first_place === payload.second_place) {
+    return { success: false, message: 'El 1° y 2° no pueden ser el mismo equipo.' }
+  }
+
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { success: false, message: 'No autorizado.' }
+
+  const { error } = await (supabase as any)
+    .from('group_predictions')
+    .upsert(
+      {
+        user_id: user.id,
+        group_name: payload.group_name,
+        first_place: payload.first_place,
+        second_place: payload.second_place,
+        points_earned: 0,
+      },
+      { onConflict: 'user_id,group_name' }
+    )
+
+  if (error) {
+    console.error('Error saving group standings:', error)
+    return { success: false, message: 'Error al guardar clasificados. Intenta de nuevo.' }
+  }
+
+  revalidatePath('/predictions')
+  return { success: true, message: 'Clasificados guardados correctamente.' }
+}
+
 export interface SpecialPredictionPayload {
   top_scorer: string | null
   best_player: string | null

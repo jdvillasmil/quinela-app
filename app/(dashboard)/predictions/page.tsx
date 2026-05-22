@@ -74,7 +74,23 @@ export default async function PredictionsPage() {
 
   const specialPrediction = (specialRaw as SpecialPrediction) ?? null
 
+  // Fetch existing group standings (1°/2° per group)
+  const { data: standingsRaw } = await (supabase as any)
+    .from('group_predictions')
+    .select('group_name, first_place, second_place')
+    .eq('user_id', user.id)
+
+  const groupStandingsData: Record<string, { first_place: string; second_place: string } | null> = {}
+  for (const gs of (standingsRaw ?? []) as Array<{ group_name: string; first_place: string; second_place: string }>) {
+    groupStandingsData[gs.group_name] = { first_place: gs.first_place, second_place: gs.second_place }
+  }
+
   return (
-    <PredictionsClient groupData={groupData} groups={groups} specialPrediction={specialPrediction} />
+    <PredictionsClient
+      groupData={groupData}
+      groups={groups}
+      specialPrediction={specialPrediction}
+      groupStandingsData={groupStandingsData}
+    />
   )
 }
