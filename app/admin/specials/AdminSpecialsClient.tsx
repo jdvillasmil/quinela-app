@@ -9,7 +9,7 @@ import { saveSpecialPoints } from './actions'
 
 type FieldKey = keyof Pick<
   SpecialPrediction,
-  'best_player' | 'top_scorer' | 'best_keeper' | 'total_goals' | 'most_red_cards' | 'most_goals_match' | 'fastest_goal_team'
+  'best_player' | 'top_scorer' | 'best_keeper' | 'total_goals' | 'fastest_goal_team'
 >
 
 const FIELDS: Array<{ key: FieldKey; label: string; pts: number; type: 'text' | 'number' }> = [
@@ -17,8 +17,6 @@ const FIELDS: Array<{ key: FieldKey; label: string; pts: number; type: 'text' | 
   { key: 'top_scorer',        label: 'Bota de Oro',             pts: 10, type: 'text'   },
   { key: 'best_keeper',       label: 'Guante de Oro',           pts: 6,  type: 'text'   },
   { key: 'total_goals',       label: 'Total de Goles (±5)',     pts: 5,  type: 'number' },
-  { key: 'most_red_cards',    label: 'Más Tarjetas Rojas',      pts: 4,  type: 'text'   },
-  { key: 'most_goals_match',  label: 'Partido con más Goles',   pts: 6,  type: 'text'   },
   { key: 'fastest_goal_team', label: 'Gol más Rápido',          pts: 5,  type: 'text'   },
 ]
 

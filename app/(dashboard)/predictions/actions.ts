@@ -117,8 +117,6 @@ export interface SpecialPredictionPayload {
   best_player: string | null
   best_keeper: string | null
   total_goals: number | null
-  most_red_cards: string | null
-  most_goals_match: string | null
   fastest_goal_team: string | null
 }
 
@@ -148,8 +146,6 @@ export async function saveSpecialPredictions(
         best_player: payload.best_player,
         best_keeper: payload.best_keeper,
         total_goals: payload.total_goals,
-        most_red_cards: payload.most_red_cards,
-        most_goals_match: payload.most_goals_match,
         fastest_goal_team: payload.fastest_goal_team,
         points_earned: 0,
       },

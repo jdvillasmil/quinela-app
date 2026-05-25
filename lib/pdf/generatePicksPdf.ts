@@ -263,8 +263,6 @@ export function generatePicksPdf(
       ['Bota de Oro — Máximo Goleador',          sp.top_scorer           || '—'],
       ['Guante de Oro — Mejor Portero',          sp.best_keeper          || '—'],
       ['Total de goles del torneo (±5 goles)',   sp.total_goals?.toString() || '—'],
-      ['Jugador con más tarjetas rojas',         sp.most_red_cards       || '—'],
-      ['Partido con más goles',                  sp.most_goals_match     || '—'],
       ['Equipo del gol más rápido',              sp.fastest_goal_team    || '—'],
     ]
 

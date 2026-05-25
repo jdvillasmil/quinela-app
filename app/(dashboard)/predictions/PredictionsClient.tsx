@@ -3,7 +3,7 @@
 import { useState, useCallback, useTransition, useMemo } from 'react'
 import {
   Calendar, MapPin, Lock, CheckCircle, AlertCircle, Loader2, Save,
-  Trophy, Goal, Shield, Hash, AlertTriangle, Swords, Zap, Printer
+  Trophy, Goal, Shield, Hash, Zap, Printer
 } from 'lucide-react'
 import type { Match, Prediction, SpecialPrediction } from '@/types'
 import { saveGroupPredictions, saveGroupStandings, saveSpecialPredictions, SpecialPredictionPayload } from './actions'
@@ -479,8 +479,6 @@ function SpecialPredictionsPanel({ initialData, locked }: { initialData: Special
     best_player: initialData?.best_player ?? '',
     best_keeper: initialData?.best_keeper ?? '',
     total_goals: initialData?.total_goals ?? null,
-    most_red_cards: initialData?.most_red_cards ?? '',
-    most_goals_match: initialData?.most_goals_match ?? '',
     fastest_goal_team: initialData?.fastest_goal_team ?? '',
   })
 
@@ -504,8 +502,6 @@ function SpecialPredictionsPanel({ initialData, locked }: { initialData: Special
     { id: 'top_scorer', label: 'Bota de Oro (Goleador)', icon: Goal, type: 'text', placeholder: 'Ej: Erling Haaland' },
     { id: 'best_keeper', label: 'Guante de Oro (Mejor Portero)', icon: Shield, type: 'text', placeholder: 'Ej: Dibu Martínez' },
     { id: 'total_goals', label: 'Total de goles del torneo', icon: Hash, type: 'number', placeholder: 'Ej: 170' },
-    { id: 'most_red_cards', label: 'Jugador con más rojas', icon: AlertTriangle, type: 'text', placeholder: 'Ej: Pepe' },
-    { id: 'most_goals_match', label: 'Partido con más goles', icon: Swords, type: 'text', placeholder: 'Ej: Brasil vs Alemania' },
     { id: 'fastest_goal_team', label: 'Equipo del gol más rápido', icon: Zap, type: 'text', placeholder: 'Ej: Francia' },
   ] as const
 

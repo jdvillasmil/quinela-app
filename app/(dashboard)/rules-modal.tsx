@@ -98,8 +98,6 @@ export default function RulesModal({ open }: { open: boolean }) {
               <div className="flex justify-between"><span>Balón de Oro (mejor jugador)</span><span className="font-bold text-navy">+8 pts</span></div>
               <div className="flex justify-between"><span>Guante de Oro (mejor portero)</span><span className="font-bold text-navy">+6 pts</span></div>
               <div className="flex justify-between"><span>Total de goles (±5 margen)</span><span className="font-bold text-navy">+5 pts</span></div>
-              <div className="flex justify-between"><span>Jugador con más rojas</span><span className="font-bold text-navy">+4 pts</span></div>
-              <div className="flex justify-between"><span>Partido con más goles</span><span className="font-bold text-navy">+6 pts</span></div>
               <div className="flex justify-between"><span>Equipo del gol más rápido</span><span className="font-bold text-navy">+5 pts</span></div>
             </div>
           </section>

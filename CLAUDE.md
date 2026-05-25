@@ -251,8 +251,6 @@ unique(user_id, match_id)
 | Balón de Oro (mejor jugador) | +8 pts |
 | Guante de Oro (mejor portero) | +6 pts |
 | Total de goles del torneo (±5 goles) | +5 pts |
-| Jugador con más tarjetas rojas | +4 pts |
-| Partido con más goles (equipo local + resultado) | +6 pts |
 | Equipo que mete el gol más rápido | +5 pts |
 
 ---

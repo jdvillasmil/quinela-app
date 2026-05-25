@@ -554,10 +554,8 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
                     ['Bota de Oro (máx. goleador)', '+10 pts'],
                     ['Balón de Oro (mejor jugador)', '+8 pts'],
                     ['Guante de Oro (mejor portero)', '+6 pts'],
-                    ['Partido con más goles', '+6 pts'],
                     ['Total de goles del torneo (±5)', '+5 pts'],
                     ['Gol más rápido (equipo)', '+5 pts'],
-                    ['Más tarjetas rojas (jugador)', '+4 pts'],
                   ].map(([label, pts]) => (
                     <div key={label} className="flex justify-between items-center text-xs">
                       <span className="text-gray-400">{label}</span>
