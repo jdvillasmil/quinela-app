@@ -444,9 +444,11 @@ function GroupPanel({ matches, groupName }: GroupPanelProps) {
           </div>
         ) : (
           <p className="text-xs text-gray-500">
-            {editableCount > 0
-              ? 'Completa todos los marcadores antes de guardar.'
-              : `Todos los partidos del Grupo ${groupName} están cerrados.`
+            {editableCount === 0
+              ? `Todos los partidos del Grupo ${groupName} están cerrados.`
+              : filledCount < editableCount
+                ? 'Completa todos los marcadores antes de guardar.'
+                : null
             }
           </p>
         )}
