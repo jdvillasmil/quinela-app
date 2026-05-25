@@ -3,7 +3,7 @@
 import { useState, useCallback, useTransition, useMemo } from 'react'
 import {
   Calendar, MapPin, Lock, CheckCircle, AlertCircle, Loader2, Save,
-  Trophy, Goal, Shield, Hash, AlertTriangle, Swords, Zap
+  Trophy, Goal, Shield, Hash, AlertTriangle, Swords, Zap, Printer
 } from 'lucide-react'
 import type { Match, Prediction, SpecialPrediction } from '@/types'
 import { saveGroupPredictions, saveGroupStandings, saveSpecialPredictions, SpecialPredictionPayload } from './actions'
@@ -24,6 +24,7 @@ interface Props {
   groups: string[]
   specialPrediction: SpecialPrediction | null
   groupStandingsData: Record<string, { first_place: string; second_place: string } | null>
+  username: string
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -573,12 +574,32 @@ function SpecialPredictionsPanel({ initialData, locked }: { initialData: Special
 
 // ─── Main Client Component ────────────────────────────────────────────────────
 
-export default function PredictionsClient({ groupData, groups, specialPrediction, groupStandingsData }: Props) {
+export default function PredictionsClient({ groupData, groups, specialPrediction, groupStandingsData, username }: Props) {
   const [activeGroup, setActiveGroup] = useState(groups[0] ?? 'A')
   const [mainTab, setMainTab] = useState<'groups' | 'special'>('groups')
+  const [isPrinting, setIsPrinting] = useState(false)
 
   const tournamentStart = new Date('2026-06-11T00:00:00-04:00')
   const isTournamentStarted = new Date() > tournamentStart
+
+  const savedPredictionsCount = useMemo(
+    () => groups.reduce((total, g) => total + groupData[g].filter((m) => m.prediction !== null).length, 0),
+    [groupData, groups],
+  )
+  const canPrint = savedPredictionsCount === 48
+
+  async function handlePrint() {
+    if (!canPrint || isPrinting) return
+    setIsPrinting(true)
+    try {
+      const { generatePicksPdf } = await import('@/lib/pdf/generatePicksPdf')
+      generatePicksPdf(groupData, groups, specialPrediction, username)
+    } catch (err) {
+      console.error('Error generando PDF:', err)
+    } finally {
+      setIsPrinting(false)
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -591,27 +612,50 @@ export default function PredictionsClient({ groupData, groups, specialPrediction
           </p>
         </div>
 
-        <div className="flex p-1 bg-[#020B18] rounded-lg border border-[#1E3A6E]/40 shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Print picks button */}
           <button
-            onClick={() => setMainTab('groups')}
-            className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-150 cursor-pointer ${
-              mainTab === 'groups'
-                ? 'bg-[#071729] text-white shadow-sm border border-[#1E3A6E]/50'
-                : 'text-gray-500 hover:text-gray-300'
-            }`}
+            onClick={handlePrint}
+            disabled={!canPrint || isPrinting}
+            title={canPrint ? 'Descargar PDF con todas tus predicciones' : `${savedPredictionsCount}/48 partidos guardados`}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 text-sm font-semibold rounded-lg border transition-all duration-200
+              ${canPrint && !isPrinting
+                ? 'border-skyblue/40 text-skyblue hover:bg-skyblue/10 cursor-pointer'
+                : 'border-white/10 text-gray-600 cursor-not-allowed opacity-50'
+              }`}
           >
-            Fase de Grupos
+            {isPrinting
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <Printer className="w-4 h-4" />
+            }
+            <span className="hidden sm:inline">
+              {isPrinting ? 'Generando…' : canPrint ? 'Imprimir mis picks' : `${savedPredictionsCount}/48`}
+            </span>
           </button>
-          <button
-            onClick={() => setMainTab('special')}
-            className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-150 cursor-pointer ${
-              mainTab === 'special'
-                ? 'bg-[#071729] text-white shadow-sm border border-[#1E3A6E]/50'
-                : 'text-gray-500 hover:text-gray-300'
-            }`}
-          >
-            Premios Especiales
-          </button>
+
+          {/* Tab switcher */}
+          <div className="flex p-1 bg-[#020B18] rounded-lg border border-[#1E3A6E]/40">
+            <button
+              onClick={() => setMainTab('groups')}
+              className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-150 cursor-pointer ${
+                mainTab === 'groups'
+                  ? 'bg-[#071729] text-white shadow-sm border border-[#1E3A6E]/50'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              Fase de Grupos
+            </button>
+            <button
+              onClick={() => setMainTab('special')}
+              className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-150 cursor-pointer ${
+                mainTab === 'special'
+                  ? 'bg-[#071729] text-white shadow-sm border border-[#1E3A6E]/50'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              Premios Especiales
+            </button>
+          </div>
         </div>
       </div>
 

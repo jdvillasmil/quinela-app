@@ -65,6 +65,16 @@ export default async function PredictionsPage() {
   // Sorted list of groups (A–L)
   const groups = Object.keys(groupData).sort()
 
+  // Fetch user profile for username
+  const { data: profileRaw } = await (supabase as any)
+    .from('profiles')
+    .select('username')
+    .eq('id', user.id)
+    .single()
+  const username: string = (profileRaw as { username?: string } | null)?.username
+    ?? user.email?.split('@')[0]
+    ?? 'usuario'
+
   // Fetch special predictions
   const { data: specialRaw } = await (supabase as any)
     .from('special_predictions')
@@ -91,6 +101,7 @@ export default async function PredictionsPage() {
       groups={groups}
       specialPrediction={specialPrediction}
       groupStandingsData={groupStandingsData}
+      username={username}
     />
   )
 }
