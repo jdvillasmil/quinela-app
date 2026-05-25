@@ -146,7 +146,7 @@ export function generatePicksPdf(
     // Matches table
     const matchRows = matches.map((m) => {
       const pred = m.prediction
-      const score = pred !== null ? `${pred.predicted_home} − ${pred.predicted_away}` : '— − —'
+      const score = pred !== null ? `${pred.predicted_home} - ${pred.predicted_away}` : '- -'
       return [fmtDateLine(m.match_date), teamEs(m.home_team), score, teamEs(m.away_team)]
     })
 
