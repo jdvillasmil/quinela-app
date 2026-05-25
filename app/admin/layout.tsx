@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, Swords, Users, LogOut } from 'lucide-react'
+import { LayoutDashboard, Swords, Users, LogOut, Star } from 'lucide-react'
 import type { Profile } from '@/types'
 
 export const metadata = {
@@ -30,9 +30,10 @@ export default async function AdminLayout({
   }
 
   const navItems = [
-    { label: 'Métricas', href: '/admin', icon: LayoutDashboard },
-    { label: 'Partidos', href: '/admin/matches', icon: Swords },
-    { label: 'Usuarios', href: '/admin/users', icon: Users },
+    { label: 'Métricas',   href: '/admin',          icon: LayoutDashboard },
+    { label: 'Partidos',   href: '/admin/matches',  icon: Swords },
+    { label: 'Usuarios',   href: '/admin/users',    icon: Users },
+    { label: 'Especiales', href: '/admin/specials', icon: Star },
   ]
 
   return (
