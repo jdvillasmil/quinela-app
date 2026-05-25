@@ -30,32 +30,35 @@ const TEAMS_ES: Record<string, string> = {
   'Sweden': 'Suecia',
   'Tunisia': 'Túnez',
   // Grupo G
-  'France': 'Francia',
-  'Nigeria': 'Nigeria',
-  'Iraq': 'Irak',
+  'Belgium': 'Bélgica',
+  'Egypt': 'Egipto',
+  'Iran': 'Irán',
+  'New Zealand': 'Nueva Zelanda',
   // Grupo H
   'Spain': 'España',
-  'Colombia': 'Colombia',
+  'Cape Verde': 'Cabo Verde',
+  'Saudi Arabia': 'Arabia Saudí',
+  'Uruguay': 'Uruguay',
   // Grupo I
-  'Italy': 'Italia',
-  'Denmark': 'Dinamarca',
-  'Saudi Arabia': 'Arabia Saudita',
-  'Benin': 'Benín',
+  'France': 'Francia',
+  'Senegal': 'Senegal',
+  'Iraq': 'Irak',
+  'Norway': 'Noruega',
   // Grupo J
-  'Belgium': 'Bélgica',
-  'Chile': 'Chile',
+  'Argentina': 'Argentina',
   'Algeria': 'Argelia',
-  'Jamaica': 'Jamaica',
+  'Austria': 'Austria',
+  'Jordan': 'Jordania',
   // Grupo K
   'Portugal': 'Portugal',
-  'Ghana': 'Ghana',
-  'Uruguay': 'Uruguay',
-  'Iceland': 'Islandia',
+  'DR Congo': 'RD Congo',
+  'Uzbekistan': 'Uzbekistán',
+  'Colombia': 'Colombia',
   // Grupo L
-  'Argentina': 'Argentina',
-  'Ukraine': 'Ucrania',
-  'Cameroon': 'Camerún',
-  'New Zealand': 'Nueva Zelanda',
+  'England': 'Inglaterra',
+  'Croatia': 'Croacia',
+  'Ghana': 'Ghana',
+  'Panama': 'Panamá',
 }
 
 export function teamEs(name: string): string {
