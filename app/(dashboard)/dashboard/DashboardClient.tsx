@@ -2,14 +2,32 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Trophy, Target, ChevronRight, Star } from 'lucide-react'
+import { Trophy, Target, ChevronRight, Star, CalendarDays } from 'lucide-react'
 import type { LeaderboardEntry } from '@/types'
+import type { NextMatch } from './page'
 
 interface Props {
   firstName: string
   entry: LeaderboardEntry | null
   totalUsers: number
   predictionsCount: number
+  nextMatches: NextMatch[]
+}
+
+function formatMatchDate(dateStr: string): { day: string; time: string } {
+  const d = new Date(dateStr)
+  const day = d.toLocaleDateString('es-CO', {
+    timeZone: 'America/Caracas',
+    day: '2-digit',
+    month: 'short',
+  })
+  const time = d.toLocaleTimeString('es-CO', {
+    timeZone: 'America/Caracas',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  return { day, time }
 }
 
 const TOURNAMENT_START = new Date('2026-06-11T18:00:00Z') // 14:00 Bogotá (UTC-4)
@@ -53,7 +71,7 @@ function TimeSeparator() {
   return <span className="text-white/25 text-2xl font-light self-start mt-5">:</span>
 }
 
-export default function DashboardClient({ firstName, entry, totalUsers, predictionsCount }: Props) {
+export default function DashboardClient({ firstName, entry, totalUsers, predictionsCount, nextMatches }: Props) {
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null)
 
   useEffect(() => {
@@ -125,6 +143,51 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
           )}
         </div>
       </div>
+
+      {/* Próximos partidos */}
+      {nextMatches.length > 0 && (
+        <div className="bg-[#071729] rounded-2xl border border-[#1E3A6E]/50 shadow-lg overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/6">
+            <CalendarDays className="w-4 h-4 text-skyblue" />
+            <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+              Próximos partidos
+            </span>
+          </div>
+          <ul className="divide-y divide-white/5">
+            {nextMatches.map((match) => {
+              const { day, time } = formatMatchDate(match.match_date)
+              return (
+                <li key={match.id} className="flex items-center gap-4 px-5 py-3.5">
+                  {/* Date/time */}
+                  <div className="w-20 flex-shrink-0">
+                    <p className="text-[11px] text-skyblue font-semibold tabular-nums">{time} <span className="text-skyblue/50">UTC-4</span></p>
+                    <p className="text-[11px] text-gray-500 capitalize mt-0.5">{day}</p>
+                  </div>
+                  {/* Matchup */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 text-sm font-medium text-white">
+                      <span className="text-base leading-none">{match.home_flag ?? '🏳'}</span>
+                      <span className="truncate">{match.home_team}</span>
+                      <span className="text-gray-600 text-xs font-normal flex-shrink-0">vs</span>
+                      <span className="text-base leading-none">{match.away_flag ?? '🏳'}</span>
+                      <span className="truncate">{match.away_team}</span>
+                    </div>
+                    {match.venue && (
+                      <p className="text-[11px] text-gray-600 mt-0.5 truncate">{match.venue}</p>
+                    )}
+                  </div>
+                  {/* Group badge */}
+                  {match.group_name && (
+                    <span className="flex-shrink-0 text-[10px] font-semibold text-skyblue/60 bg-skyblue/8 border border-skyblue/15 rounded-md px-2 py-0.5 uppercase tracking-wide">
+                      Gr. {match.group_name}
+                    </span>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
 
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -234,19 +297,15 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
       >
         <div>
           <p className="text-skyblue text-xs font-semibold uppercase tracking-widest mb-1.5">
-            {predictionsCount === 0
-              ? '¡Empieza ahora — quedan 22 días!'
-              : predictionsCount < GROUP_MATCHES
-              ? 'Continúa donde quedaste'
-              : '¡Predicciones completas!'}
+            {predictionsCount === GROUP_MATCHES ? '¡Predicciones completas!' : 'Fase de grupos · Cierre 11 jun'}
           </p>
           <p className="text-2xl sm:text-3xl font-bold leading-tight">
-            {predictionsCount < GROUP_MATCHES ? 'Haz tus predicciones' : 'Revisa tus predicciones'}
+            {predictionsCount === GROUP_MATCHES ? 'Revisa tus predicciones' : 'Haz tus predicciones'}
           </p>
           <p className="text-white/35 text-sm mt-2">
             {predictionsCount === GROUP_MATCHES
               ? 'Ya completaste los 72 partidos de grupos'
-              : `${remaining} partido${remaining !== 1 ? 's' : ''} sin predecir · Cierre el 11 de junio`}
+              : `${remaining} partido${remaining !== 1 ? 's' : ''} sin predecir`}
           </p>
         </div>
         <ChevronRight className="w-8 h-8 text-skyblue/50 group-hover:text-skyblue group-hover:translate-x-1.5 transition-all flex-shrink-0 ml-4" />
