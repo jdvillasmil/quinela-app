@@ -100,53 +100,101 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
         </p>
       </div>
 
-      {/* Countdown */}
-      <div className="relative bg-navy rounded-2xl p-6 sm:p-8 overflow-hidden shadow-lg shadow-black/30 border border-[#1E3A6E]/60">
+      {/* Countdown — two-column card */}
+      <div className="relative bg-navy rounded-2xl overflow-hidden shadow-lg shadow-black/30 border border-[#1E3A6E]/60">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-12 -right-12 w-52 h-52 rounded-full bg-skyblue/6" />
           <div className="absolute -bottom-12 -left-12 w-60 h-60 rounded-full bg-skyblue/4" />
         </div>
 
-        <div className="relative">
-          <p className="text-skyblue text-xs font-semibold uppercase tracking-widest mb-0.5">
-            {timeLeft?.started ? 'El torneo está en curso' : 'El torneo comienza en'}
-          </p>
-          <p className="text-white/35 text-xs mb-6">
-            11 jun 2026 · Estadio Azteca, Mexico City · 14:00 h (UTC-4)
-          </p>
+        <div className="relative flex flex-col sm:flex-row">
+          {/* Left: timer */}
+          <div className="flex-1 p-6 sm:p-8">
+            <p className="text-skyblue text-xs font-semibold uppercase tracking-widest mb-0.5">
+              {timeLeft?.started ? 'El torneo está en curso' : 'El torneo comienza en'}
+            </p>
+            <p className="text-white/35 text-xs mb-6">
+              11 jun 2026 · 14:00 h (UTC-4)
+            </p>
 
-          {timeLeft === null ? (
-            <div className="flex gap-3 sm:gap-5">
-              {['--', '--', '--', '--'].map((v, i) => (
-                <div key={i} className="flex flex-col items-center">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-black/20 border border-white/10 rounded-xl flex items-center justify-center">
-                    <span className="text-2xl font-bold text-white/20 tabular-nums">{v}</span>
+            {timeLeft === null ? (
+              <div className="flex gap-3 sm:gap-4">
+                {['--', '--', '--', '--'].map((v, i) => (
+                  <div key={i} className="flex flex-col items-center">
+                    <div className="w-16 h-16 sm:w-[4.25rem] sm:h-[4.25rem] bg-black/20 border border-white/10 rounded-xl flex items-center justify-center">
+                      <span className="text-2xl font-bold text-white/20 tabular-nums">{v}</span>
+                    </div>
+                    <span className="text-white/10 text-[10px] font-semibold mt-2 uppercase tracking-widest">···</span>
                   </div>
-                  <span className="text-white/10 text-[10px] font-semibold mt-2 uppercase tracking-widest">···</span>
-                </div>
-              ))}
-            </div>
-          ) : timeLeft.started ? (
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
-              <p className="text-3xl font-bold text-white">¡El Mundial está en curso!</p>
-            </div>
-          ) : (
-            <div className="flex items-start gap-2 sm:gap-4">
-              <TimeUnit value={timeLeft.days} label="Días" />
-              <TimeSeparator />
-              <TimeUnit value={timeLeft.hours} label="Horas" />
-              <TimeSeparator />
-              <TimeUnit value={timeLeft.minutes} label="Min" />
-              <TimeSeparator />
-              <TimeUnit value={timeLeft.seconds} label="Seg" />
-            </div>
+                ))}
+              </div>
+            ) : timeLeft.started ? (
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
+                <p className="text-2xl font-bold text-white">¡El Mundial está en curso!</p>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 sm:gap-3">
+                <TimeUnit value={timeLeft.days} label="Días" />
+                <TimeSeparator />
+                <TimeUnit value={timeLeft.hours} label="Horas" />
+                <TimeSeparator />
+                <TimeUnit value={timeLeft.minutes} label="Min" />
+                <TimeSeparator />
+                <TimeUnit value={timeLeft.seconds} label="Seg" />
+              </div>
+            )}
+          </div>
+
+          {/* Divider */}
+          {nextMatches.length > 0 && (
+            <>
+              <div className="hidden sm:block w-px bg-white/8 my-6 flex-shrink-0" />
+              <div className="sm:hidden h-px bg-white/8 mx-6" />
+            </>
           )}
+
+          {/* Right: próximo partido */}
+          {nextMatches.length > 0 && (() => {
+            const match = nextMatches[0]
+            const { day, time } = formatMatchDate(match.match_date)
+            return (
+              <div className="flex-1 p-6 sm:p-8 flex flex-col justify-center">
+                <p className="text-skyblue text-xs font-semibold uppercase tracking-widest mb-4">
+                  Próximo partido
+                </p>
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl leading-none">{match.home_flag ?? '🏳'}</span>
+                    <span className="text-sm font-semibold text-white">{teamEs(match.home_team)}</span>
+                  </div>
+                  <span className="block text-xs text-gray-600 pl-0.5">vs</span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl leading-none">{match.away_flag ?? '🏳'}</span>
+                    <span className="text-sm font-semibold text-white">{teamEs(match.away_team)}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-skyblue tabular-nums">
+                  {time} <span className="text-skyblue/50">UTC-4</span>
+                  <span className="text-gray-600"> · </span>
+                  <span className="text-gray-500 capitalize">{day}</span>
+                </p>
+                {match.venue && (
+                  <p className="text-[11px] text-gray-600 mt-1 truncate">{match.venue}</p>
+                )}
+                {match.group_name && (
+                  <span className="inline-block mt-3 text-[10px] font-semibold text-skyblue/60 bg-skyblue/8 border border-skyblue/15 rounded-md px-2 py-0.5 uppercase tracking-wide w-fit">
+                    Grupo {match.group_name}
+                  </span>
+                )}
+              </div>
+            )
+          })()}
         </div>
       </div>
 
-      {/* Próximos partidos */}
-      {nextMatches.length > 0 && (
+      {/* Próximos partidos (2° y 3° en adelante) */}
+      {nextMatches.length > 1 && (
         <div className="bg-[#071729] rounded-2xl border border-[#1E3A6E]/50 shadow-lg overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/6">
             <CalendarDays className="w-4 h-4 text-skyblue" />
@@ -155,16 +203,14 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
             </span>
           </div>
           <ul className="divide-y divide-white/5">
-            {nextMatches.map((match) => {
+            {nextMatches.slice(1).map((match) => {
               const { day, time } = formatMatchDate(match.match_date)
               return (
                 <li key={match.id} className="flex items-center gap-4 px-5 py-3.5">
-                  {/* Date/time */}
                   <div className="w-20 flex-shrink-0">
                     <p className="text-[11px] text-skyblue font-semibold tabular-nums">{time} <span className="text-skyblue/50">UTC-4</span></p>
                     <p className="text-[11px] text-gray-500 capitalize mt-0.5">{day}</p>
                   </div>
-                  {/* Matchup */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 text-sm font-medium text-white">
                       <span className="text-base leading-none">{match.home_flag ?? '🏳'}</span>
@@ -177,7 +223,6 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
                       <p className="text-[11px] text-gray-600 mt-0.5 truncate">{match.venue}</p>
                     )}
                   </div>
-                  {/* Group badge */}
                   {match.group_name && (
                     <span className="flex-shrink-0 text-[10px] font-semibold text-skyblue/60 bg-skyblue/8 border border-skyblue/15 rounded-md px-2 py-0.5 uppercase tracking-wide">
                       Gr. {match.group_name}
