@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Trophy, Target, ChevronRight, Star, CalendarDays } from 'lucide-react'
+import { Trophy, Target, ChevronRight, Star, CalendarDays, ChevronDown } from 'lucide-react'
 import type { LeaderboardEntry } from '@/types'
 import type { NextMatch } from './page'
 import { teamEs } from '@/lib/i18n/teams'
@@ -74,6 +74,7 @@ function TimeSeparator() {
 
 export default function DashboardClient({ firstName, entry, totalUsers, predictionsCount, nextMatches }: Props) {
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null)
+  const [rulesOpen, setRulesOpen] = useState(false)
 
   useEffect(() => {
     const update = () => setTimeLeft(getTimeLeft(TOURNAMENT_START))
@@ -356,6 +357,100 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
         </div>
         <ChevronRight className="w-8 h-8 text-skyblue/50 group-hover:text-skyblue group-hover:translate-x-1.5 transition-all flex-shrink-0 ml-4" />
       </Link>
+
+      {/* Reglas del torneo — acordeón */}
+      <div className="bg-[#071729] rounded-2xl border border-[#1E3A6E]/50 shadow-lg overflow-hidden">
+        <button
+          onClick={() => setRulesOpen(v => !v)}
+          className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/[0.02] transition-colors"
+        >
+          <span className="text-sm font-semibold text-white">📋 Reglas del torneo</span>
+          <ChevronDown
+            className={`w-4 h-4 text-skyblue/60 transition-transform duration-300 flex-shrink-0 ${rulesOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+
+        <div
+          className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+          style={{ gridTemplateRows: rulesOpen ? '1fr' : '0fr' }}
+        >
+          <div className="overflow-hidden">
+            <div className="px-5 pb-5 space-y-5 border-t border-white/6 pt-4">
+
+              {/* Fase de grupos */}
+              <div>
+                <p className="text-[11px] font-semibold text-skyblue uppercase tracking-wider mb-2.5">Fase de grupos</p>
+                <div className="space-y-1.5">
+                  {[
+                    ['Signo 1X2 correcto', '+1 pt'],
+                    ['Diferencia de goles exacta', '+1 pt'],
+                    ['Resultado exacto', '+3 pts'],
+                    ['1° lugar del grupo correcto', '+2 pts'],
+                    ['2° lugar del grupo correcto', '+1 pt'],
+                  ].map(([label, pts]) => (
+                    <div key={label} className="flex justify-between items-center text-xs">
+                      <span className="text-gray-400">{label}</span>
+                      <span className="font-semibold text-white tabular-nums">{pts}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Fase eliminatoria */}
+              <div>
+                <p className="text-[11px] font-semibold text-skyblue uppercase tracking-wider mb-2.5">Fase eliminatoria</p>
+                <div className="rounded-lg border border-white/6 overflow-hidden text-xs">
+                  <div className="grid grid-cols-3 bg-white/4 px-3 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                    <span>Ronda</span>
+                    <span className="text-center">Ganador</span>
+                    <span className="text-right">Exacto</span>
+                  </div>
+                  {[
+                    ['1/16 (R32)', '+2 pts', '+4 pts'],
+                    ['Octavos (R16)', '+3 pts', '+6 pts'],
+                    ['Cuartos de final', '+4 pts', '+8 pts'],
+                    ['Semifinales', '+5 pts', '+10 pts'],
+                    ['Final — Campeón', '+15 pts', '—'],
+                    ['Final — Subcampeón', '+8 pts', '—'],
+                    ['3er puesto', '+5 pts', '—'],
+                  ].map(([round, winner, exact], i) => (
+                    <div
+                      key={round}
+                      className={`grid grid-cols-3 px-3 py-2 ${i % 2 === 0 ? '' : 'bg-white/[0.02]'}`}
+                    >
+                      <span className="text-gray-400">{round}</span>
+                      <span className="text-center font-semibold text-white">{winner}</span>
+                      <span className="text-right font-semibold text-white">{exact}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Predicciones especiales */}
+              <div>
+                <p className="text-[11px] font-semibold text-skyblue uppercase tracking-wider mb-2.5">Predicciones especiales</p>
+                <div className="space-y-1.5">
+                  {[
+                    ['Bota de Oro (máx. goleador)', '+10 pts'],
+                    ['Balón de Oro (mejor jugador)', '+8 pts'],
+                    ['Guante de Oro (mejor portero)', '+6 pts'],
+                    ['Partido con más goles', '+6 pts'],
+                    ['Total de goles del torneo (±5)', '+5 pts'],
+                    ['Gol más rápido (equipo)', '+5 pts'],
+                    ['Más tarjetas rojas (jugador)', '+4 pts'],
+                  ].map(([label, pts]) => (
+                    <div key={label} className="flex justify-between items-center text-xs">
+                      <span className="text-gray-400">{label}</span>
+                      <span className="font-semibold text-white tabular-nums">{pts}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
 
     </div>
   )
