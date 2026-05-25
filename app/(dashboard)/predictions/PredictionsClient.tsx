@@ -588,7 +588,7 @@ export default function PredictionsClient({ groupData, groups, specialPrediction
     () => groups.reduce((total, g) => total + groupData[g].filter((m) => m.prediction !== null).length, 0),
     [groupData, groups],
   )
-  const canPrint = savedPredictionsCount === 48
+  const canPrint = savedPredictionsCount === 72
 
   async function handlePrint() {
     if (!canPrint || isPrinting) return
@@ -619,7 +619,7 @@ export default function PredictionsClient({ groupData, groups, specialPrediction
           <button
             onClick={handlePrint}
             disabled={!canPrint || isPrinting}
-            title={canPrint ? 'Descargar PDF con todas tus predicciones' : `${savedPredictionsCount}/48 partidos guardados`}
+            title={canPrint ? 'Descargar PDF con todas tus predicciones' : `${savedPredictionsCount}/72 partidos guardados`}
             className={`flex items-center gap-1.5 px-3.5 py-2.5 text-sm font-semibold rounded-lg border transition-all duration-200
               ${canPrint && !isPrinting
                 ? 'border-skyblue/40 text-skyblue hover:bg-skyblue/10 cursor-pointer'
@@ -631,7 +631,7 @@ export default function PredictionsClient({ groupData, groups, specialPrediction
               : <Printer className="w-4 h-4" />
             }
             <span className="hidden sm:inline">
-              {isPrinting ? 'Generando…' : canPrint ? 'Imprimir mis picks' : `${savedPredictionsCount}/48`}
+              {isPrinting ? 'Generando…' : canPrint ? 'Imprimir mis picks' : `${savedPredictionsCount}/72`}
             </span>
           </button>
 
