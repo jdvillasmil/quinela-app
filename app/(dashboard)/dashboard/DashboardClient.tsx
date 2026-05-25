@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Trophy, Target, ChevronRight, Star, CalendarDays } from 'lucide-react'
 import type { LeaderboardEntry } from '@/types'
 import type { NextMatch } from './page'
+import { teamEs } from '@/lib/i18n/teams'
 
 interface Props {
   firstName: string
@@ -167,10 +168,10 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 text-sm font-medium text-white">
                       <span className="text-base leading-none">{match.home_flag ?? '🏳'}</span>
-                      <span className="truncate">{match.home_team}</span>
+                      <span className="truncate">{teamEs(match.home_team)}</span>
                       <span className="text-gray-600 text-xs font-normal flex-shrink-0">vs</span>
                       <span className="text-base leading-none">{match.away_flag ?? '🏳'}</span>
-                      <span className="truncate">{match.away_team}</span>
+                      <span className="truncate">{teamEs(match.away_team)}</span>
                     </div>
                     {match.venue && (
                       <p className="text-[11px] text-gray-600 mt-0.5 truncate">{match.venue}</p>
