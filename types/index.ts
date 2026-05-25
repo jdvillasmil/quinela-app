@@ -75,11 +75,15 @@ export interface BracketPrediction {
 export interface LeaderboardEntry {
   user_id: string
   username: string
+  first_name?: string
+  last_name?: string
+  avatar_url?: string | null
   total_points: number
   group_points: number
   knockout_points: number
   special_points: number
   rank: number
+  predictions_count?: number
 }
 
 // Minimal Supabase Database type — expand as tables are created in Supabase
