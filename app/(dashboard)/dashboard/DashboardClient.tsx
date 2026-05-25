@@ -13,7 +13,7 @@ interface Props {
 }
 
 const TOURNAMENT_START = new Date('2026-06-11T18:00:00Z') // 14:00 Bogotá (UTC-4)
-const GROUP_MATCHES = 48
+const GROUP_MATCHES = 72
 
 interface TimeLeft {
   days: number
@@ -245,7 +245,7 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
           </p>
           <p className="text-white/35 text-sm mt-2">
             {predictionsCount === GROUP_MATCHES
-              ? 'Ya completaste los 48 partidos de grupos'
+              ? 'Ya completaste los 72 partidos de grupos'
               : `${remaining} partido${remaining !== 1 ? 's' : ''} sin predecir · Cierre el 11 de junio`}
           </p>
         </div>
