@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Trophy, Target, ChevronRight, Star, CalendarDays, ChevronDown } from 'lucide-react'
+import { Trophy, Target, ChevronRight, Star, CalendarDays, ChevronDown, LayoutGrid } from 'lucide-react'
 import type { LeaderboardEntry } from '@/types'
-import type { NextMatch } from './page'
+import type { NextMatch, GroupStanding } from './page'
 import { teamEs } from '@/lib/i18n/teams'
 
 interface Props {
@@ -13,6 +13,7 @@ interface Props {
   totalUsers: number
   predictionsCount: number
   nextMatches: NextMatch[]
+  groupStandings: GroupStanding[]
 }
 
 function formatMatchDate(dateStr: string): { day: string; time: string } {
@@ -72,7 +73,123 @@ function TimeSeparator() {
   return <span className="text-white/25 text-2xl font-light self-start mt-5">:</span>
 }
 
-export default function DashboardClient({ firstName, entry, totalUsers, predictionsCount, nextMatches }: Props) {
+// ─── Mis Grupos ───────────────────────────────────────────────────────────────
+
+function GroupTable({ standing }: { standing: GroupStanding }) {
+  return (
+    <div className="rounded-xl border border-[#1E3A6E]/60 overflow-hidden">
+      <div className="px-4 py-2.5 bg-[#0A1E35] flex items-center justify-between">
+        <p className="text-xs font-semibold text-skyblue uppercase tracking-wide">
+          Grupo {standing.groupName}
+        </p>
+      </div>
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="border-b border-[#1E3A6E]/40 bg-[#071729]">
+            <th className="px-3 py-2 text-left text-gray-500 font-medium w-6">#</th>
+            <th className="px-3 py-2 text-left text-gray-500 font-medium">Equipo</th>
+            <th className="px-2 py-2 text-center text-gray-500 font-medium w-8" title="Puntos">Pts</th>
+            <th className="px-2 py-2 text-center text-gray-500 font-medium w-8" title="Goles a favor">GF</th>
+            <th className="px-2 py-2 text-center text-gray-500 font-medium w-8" title="Goles en contra">GC</th>
+            <th className="px-2 py-2 text-center text-gray-500 font-medium w-8" title="Diferencia de goles">DG</th>
+          </tr>
+        </thead>
+        <tbody>
+          {standing.teams.map((t, i) => {
+            const gd = t.goalsFor - t.goalsAgainst
+            const isQualified = i < 2
+            return (
+              <tr
+                key={t.team}
+                className={`border-b border-[#1E3A6E]/20 last:border-0 transition-colors ${isQualified ? 'bg-skyblue/5' : 'bg-[#071729]'}`}
+              >
+                <td className="px-3 py-2.5 text-center font-bold">
+                  {i === 0 ? <span className="text-yellow-400">1</span>
+                    : i === 1 ? <span className="text-gray-300">2</span>
+                    : <span className="text-gray-600">{i + 1}</span>}
+                </td>
+                <td className="px-3 py-2.5">
+                  <div className="flex items-center gap-1.5">
+                    {isQualified && <div className="w-0.5 h-4 bg-skyblue rounded-full shrink-0" />}
+                    <span className="text-sm leading-none">{t.flag}</span>
+                    <span className={`truncate ${isQualified ? 'text-white font-semibold' : 'text-gray-400'}`}>
+                      {teamEs(t.team)}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-2 py-2.5 text-center font-bold text-skyblue">{t.points}</td>
+                <td className="px-2 py-2.5 text-center text-gray-400">{t.goalsFor}</td>
+                <td className="px-2 py-2.5 text-center text-gray-400">{t.goalsAgainst}</td>
+                <td className={`px-2 py-2.5 text-center font-medium ${gd > 0 ? 'text-emerald-400' : gd < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                  {gd > 0 ? `+${gd}` : gd}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function MisGrupos({ groupStandings }: { groupStandings: GroupStanding[] }) {
+  const [selected, setSelected] = useState(groupStandings[0]?.groupName ?? 'A')
+
+  const idx = groupStandings.findIndex((g) => g.groupName === selected)
+  const visible = groupStandings.slice(idx, idx + 2)
+
+  if (groupStandings.length === 0) {
+    return (
+      <div className="bg-[#071729] rounded-2xl border border-[#1E3A6E]/50 shadow-lg p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <LayoutGrid className="w-4 h-4 text-skyblue" />
+          <h2 className="text-sm font-semibold text-white uppercase tracking-wider">Mis Grupos</h2>
+        </div>
+        <p className="text-sm text-gray-500 text-center py-4">
+          Completa tus predicciones para ver tus grupos
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-[#071729] rounded-2xl border border-[#1E3A6E]/50 shadow-lg overflow-hidden">
+      {/* Header + selector */}
+      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-white/6">
+        <div className="flex items-center gap-2">
+          <LayoutGrid className="w-4 h-4 text-skyblue" />
+          <h2 className="text-sm font-semibold text-white uppercase tracking-wider">Mis Grupos</h2>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {groupStandings.map((g) => (
+            <button
+              key={g.groupName}
+              onClick={() => setSelected(g.groupName)}
+              className={`w-8 h-8 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer ${
+                selected === g.groupName
+                  ? 'bg-skyblue text-navy shadow-sm'
+                  : 'text-gray-500 hover:bg-white/8 hover:text-gray-200'
+              }`}
+            >
+              {g.groupName}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tables — 2-col desktop, 1-col mobile */}
+      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {visible.map((g) => (
+          <GroupTable key={g.groupName} standing={g} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
+
+export default function DashboardClient({ firstName, entry, totalUsers, predictionsCount, nextMatches, groupStandings }: Props) {
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null)
   const [rulesOpen, setRulesOpen] = useState(false)
 
@@ -357,6 +474,9 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
         </div>
         <ChevronRight className="w-8 h-8 text-skyblue/50 group-hover:text-skyblue group-hover:translate-x-1.5 transition-all flex-shrink-0 ml-4" />
       </Link>
+
+      {/* Mis Grupos */}
+      <MisGrupos groupStandings={groupStandings} />
 
       {/* Reglas del torneo — acordeón */}
       <div className="bg-[#071729] rounded-2xl border border-[#1E3A6E]/50 shadow-lg overflow-hidden">
