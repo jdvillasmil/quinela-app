@@ -57,8 +57,6 @@ export interface SpecialPrediction {
   best_player: string | null
   best_keeper: string | null
   total_goals: number | null
-  most_red_cards: string | null
-  most_goals_match: string | null
   fastest_goal_team: string | null
   points_earned: number
   created_at: string

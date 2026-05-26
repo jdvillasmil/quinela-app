@@ -14,8 +14,6 @@ create table if not exists public.special_predictions (
   best_player       text,                        -- Balón de Oro
   best_keeper       text,                        -- Guante de Oro
   total_goals       int  check (total_goals >= 0),
-  most_red_cards    text,
-  most_goals_match  text,                        -- e.g. "Argentina 4-1 Francia"
   fastest_goal_team text,
   points_earned     int  not null default 0,
   created_at        timestamptz not null default now(),

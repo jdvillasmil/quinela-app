@@ -188,8 +188,6 @@ top_scorer      text                   -- Bota de Oro
 best_player     text                   -- Balón de Oro
 best_keeper     text                   -- Guante de Oro
 total_goals     int                    -- total goles del torneo
-most_red_cards  text                   -- jugador con más rojas
-most_goals_match text                  -- ej: "Argentina 4-1 Francia"
 fastest_goal_team text                 -- equipo que mete el gol más rápido
 points_earned   int default 0
 created_at      timestamptz default now()
