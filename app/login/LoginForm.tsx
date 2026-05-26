@@ -14,7 +14,7 @@ const inputClass =
   '[&:-webkit-autofill]:shadow-[0_0_0_30px_#040d1c_inset] [&:-webkit-autofill]:[color-scheme:dark]'
 
 const SUPABASE_ERROR_MAP: Record<string, string> = {
-  'Email not confirmed': 'Verifica tu correo antes de iniciar sesión.',
+  'Email not confirmed': 'Debes verificar tu correo antes de entrar. Revisa tu bandeja de entrada.',
   'Invalid login credentials': 'Correo o contraseña incorrectos.',
 }
 

@@ -14,16 +14,18 @@ const inputClass =
 
 const labelClass = 'block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2'
 
-const SUPABASE_ERROR_MAP: Record<string, string> = {
-  'already registered': 'Este correo ya está registrado.',
-  'User already registered': 'Este correo ya está registrado.',
-}
-
-function resolveAuthError(message: string): string {
-  for (const [key, label] of Object.entries(SUPABASE_ERROR_MAP)) {
-    if (message.includes(key)) return label
+function resolveAuthError(message: string): React.ReactNode {
+  if (message.includes('already registered') || message.includes('User already registered')) {
+    return (
+      <>
+        Este correo ya tiene una cuenta registrada.{' '}
+        <Link href="/login" className="underline font-semibold text-red-300 hover:text-red-200 transition-colors">
+          ¿Olvidaste tu contraseña?
+        </Link>
+      </>
+    )
   }
-  return 'Error al crear la cuenta. Intenta de nuevo.'
+  return 'Error al crear la cuenta. Intenta de nuevo en unos segundos.'
 }
 
 interface FormState {
@@ -47,7 +49,7 @@ const EMPTY_FORM: FormState = {
 function validate(form: FormState): string {
   if (Object.values(form).some(v => !v.trim())) return 'Todos los campos son obligatorios.'
   if (!form.email.toLowerCase().endsWith('@proyelec.com'))
-    return 'Solo se permiten correos con dominio @proyelec.com.'
+    return 'Solo se permiten correos @proyelec.com'
   if (!/^[a-z0-9_]{3,20}$/.test(form.username))
     return 'El usuario solo puede tener letras minúsculas, números y _ (3–20 caracteres).'
   if (form.password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.'
@@ -57,7 +59,7 @@ function validate(form: FormState): string {
 
 export default function RegisterPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<React.ReactNode>(null)
   const [loading, setLoading] = useState(false)
   const [successEmail, setSuccessEmail] = useState('')
 
@@ -68,7 +70,7 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError('')
+    setError(null)
 
     const validationError = validate(form)
     if (validationError) {
@@ -117,9 +119,17 @@ export default function RegisterPage() {
             <h2 className="text-xl font-bold text-white mb-2">¡Revisa tu correo!</h2>
             <p className="text-sm text-gray-400">Enviamos un enlace de verificación a</p>
             <p className="text-sm font-bold text-skyblue mt-1 mb-4 break-all">{successEmail}</p>
-            <p className="text-xs text-gray-500 mb-7 leading-relaxed">
-              Haz clic en el enlace para activar tu cuenta.
-              Puede tardar unos minutos — revisa también tu carpeta de spam.
+            <p className="text-xs text-gray-500 leading-relaxed mb-3">
+              Haz clic en el enlace para activar tu cuenta. Puede tardar unos minutos.
+            </p>
+            <p className="text-xs text-gray-500 leading-relaxed mb-7">
+              ¿No ves el correo? Revisa tu carpeta de spam o escríbenos a{' '}
+              <a
+                href="mailto:admin@proyelec.com"
+                className="text-skyblue hover:text-skyblue/80 underline transition-colors"
+              >
+                admin@proyelec.com
+              </a>
             </p>
             <Link
               href="/login"
@@ -259,9 +269,9 @@ export default function RegisterPage() {
             </div>
 
             {error && (
-              <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/25 text-red-400 rounded-lg px-4 py-3 text-xs">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                {error}
+              <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/25 text-red-400 rounded-lg px-4 py-3 text-xs leading-relaxed">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{error}</span>
               </div>
             )}
 
