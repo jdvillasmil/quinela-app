@@ -6,6 +6,7 @@ import { Trophy, Target, ChevronRight, Star, CalendarDays, ChevronDown, LayoutGr
 import type { LeaderboardEntry } from '@/types'
 import type { NextMatch, GroupStanding } from './page'
 import { teamEs } from '@/lib/i18n/teams'
+import TeamFlag from '@/components/ui/TeamFlag'
 
 interface Props {
   firstName: string
@@ -111,7 +112,7 @@ function GroupTable({ standing }: { standing: GroupStanding }) {
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-1.5">
                     {isQualified && <div className="w-0.5 h-4 bg-skyblue rounded-full shrink-0" />}
-                    <span className="text-sm leading-none">{t.flag}</span>
+                    <TeamFlag team={t.team} size="sm" className="rounded-sm" />
                     <span className={`truncate ${isQualified ? 'text-white font-semibold' : 'text-gray-400'}`}>
                       {teamEs(t.team)}
                     </span>
@@ -283,12 +284,12 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
                 </p>
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2.5">
-                    <span className="text-xl leading-none">{match.home_flag ?? '🏳'}</span>
+                    <TeamFlag team={match.home_team} size="md" className="rounded-sm" />
                     <span className="text-sm font-semibold text-white">{teamEs(match.home_team)}</span>
                   </div>
                   <span className="block text-xs text-gray-600 pl-0.5">vs</span>
                   <div className="flex items-center gap-2.5">
-                    <span className="text-xl leading-none">{match.away_flag ?? '🏳'}</span>
+                    <TeamFlag team={match.away_team} size="md" className="rounded-sm" />
                     <span className="text-sm font-semibold text-white">{teamEs(match.away_team)}</span>
                   </div>
                 </div>
@@ -331,10 +332,10 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 text-sm font-medium text-white">
-                      <span className="text-base leading-none">{match.home_flag ?? '🏳'}</span>
+                      <TeamFlag team={match.home_team} size="sm" className="rounded-sm" />
                       <span className="truncate">{teamEs(match.home_team)}</span>
                       <span className="text-gray-600 text-xs font-normal flex-shrink-0">vs</span>
-                      <span className="text-base leading-none">{match.away_flag ?? '🏳'}</span>
+                      <TeamFlag team={match.away_team} size="sm" className="rounded-sm" />
                       <span className="truncate">{teamEs(match.away_team)}</span>
                     </div>
                     {match.venue && (

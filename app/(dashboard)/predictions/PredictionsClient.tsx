@@ -8,6 +8,7 @@ import {
 import type { Match, Prediction, SpecialPrediction } from '@/types'
 import { saveGroupPredictions, saveGroupStandings, saveSpecialPredictions, SpecialPredictionPayload } from './actions'
 import { teamEs } from '@/lib/i18n/teams'
+import TeamFlag from '@/components/ui/TeamFlag'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -143,7 +144,7 @@ function MatchCard({ match, homeScore, awayScore, onHomeChange, onAwayChange }: 
       <div className="flex items-center justify-center gap-3 px-4 py-3">
         {/* Home Team */}
         <div className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
-          <span className="text-3xl leading-none">{match.home_flag ?? '🏳️'}</span>
+          <TeamFlag team={match.home_team} size="lg" className="rounded-sm" />
           <span className="text-xs font-semibold text-gray-200 text-center leading-tight truncate w-full">
             {teamEs(match.home_team)}
           </span>
@@ -168,7 +169,7 @@ function MatchCard({ match, homeScore, awayScore, onHomeChange, onAwayChange }: 
 
         {/* Away Team */}
         <div className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
-          <span className="text-3xl leading-none">{match.away_flag ?? '🏳️'}</span>
+          <TeamFlag team={match.away_team} size="lg" className="rounded-sm" />
           <span className="text-xs font-semibold text-gray-200 text-center leading-tight truncate w-full">
             {teamEs(match.away_team)}
           </span>
@@ -409,7 +410,7 @@ function GroupPanel({ matches, groupName }: GroupPanelProps) {
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1.5">
                       {i < 2 && <div className="w-0.5 h-4 bg-skyblue rounded-full" />}
-                      <span>{s.flag}</span>
+                      <TeamFlag team={s.team} size="sm" className="rounded-sm" />
                       <span className={i < 2 ? 'text-white font-semibold' : 'text-gray-400'}>{teamEs(s.team)}</span>
                     </div>
                   </td>

@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import type { Profile, LeaderboardEntry } from '@/types'
 import { Shield, Target, Trophy, Zap, TrendingUp } from 'lucide-react'
 import { teamEs } from '@/lib/i18n/teams'
+import TeamFlag from '@/components/ui/TeamFlag'
 
 export const metadata: Metadata = {
   title: 'Mi Perfil — Quiniela Proyelec',
@@ -211,10 +212,10 @@ export default async function ProfilePage() {
                     <tr key={pred.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-1.5 text-xs">
-                          <span className="text-base leading-none">{m.home_flag ?? '🏳'}</span>
+                          <TeamFlag team={m.home_team} size="sm" className="rounded-sm" />
                           <span className="font-medium text-gray-200">{teamEs(m.home_team)}</span>
                           <span className="text-gray-600">vs</span>
-                          <span className="text-base leading-none">{m.away_flag ?? '🏳'}</span>
+                          <TeamFlag team={m.away_team} size="sm" className="rounded-sm" />
                           <span className="font-medium text-gray-200">{teamEs(m.away_team)}</span>
                         </div>
                         {m.group_name && (
