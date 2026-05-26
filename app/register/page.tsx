@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Loader2, AlertCircle } from 'lucide-react'
 
 const inputClass =
   'w-full px-4 py-3 bg-black/25 border border-white/15 rounded-lg text-sm text-white ' +
@@ -58,10 +59,10 @@ function validate(form: FormState): string {
 }
 
 export default function RegisterPage() {
+  const router = useRouter()
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [error, setError] = useState<React.ReactNode>(null)
   const [loading, setLoading] = useState(false)
-  const [successEmail, setSuccessEmail] = useState('')
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target
@@ -80,7 +81,8 @@ export default function RegisterPage() {
 
     setLoading(true)
     const supabase = createClient()
-    const { error: authError } = await supabase.auth.signUp({
+
+    const { error: signUpError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
@@ -89,61 +91,30 @@ export default function RegisterPage() {
           last_name: form.lastName,
           username: form.username,
         },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
-    setLoading(false)
 
-    if (authError) {
-      setError(resolveAuthError(authError.message))
+    if (signUpError) {
+      setLoading(false)
+      setError(resolveAuthError(signUpError.message))
       return
     }
 
-    setSuccessEmail(form.email)
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: form.email,
+      password: form.password,
+    })
+    setLoading(false)
+
+    if (signInError) {
+      setError('Cuenta creada. Inicia sesión para continuar.')
+      return
+    }
+
+    router.refresh()
+    router.push('/dashboard')
   }
 
-  // ── Success state ──────────────────────────────────────────────────────────
-  if (successEmail) {
-    return (
-      <main className="min-h-screen bg-navy relative flex items-center justify-center px-4 py-12 overflow-hidden">
-        <div aria-hidden className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-skyblue/6 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative w-full max-w-sm">
-          <div className="bg-[#071729] border border-[#1E3A6E]/60 rounded-2xl shadow-2xl shadow-black/40 p-8 text-center">
-            <div className="h-px bg-gradient-to-r from-transparent via-skyblue/25 to-transparent mb-6" />
-            <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/25 rounded-full flex items-center justify-center mx-auto mb-5">
-              <CheckCircle2 className="w-8 h-8 text-emerald-400" />
-            </div>
-            <h2 className="text-xl font-bold text-white mb-2">¡Revisa tu correo!</h2>
-            <p className="text-sm text-gray-400">Enviamos un enlace de verificación a</p>
-            <p className="text-sm font-bold text-skyblue mt-1 mb-4 break-all">{successEmail}</p>
-            <p className="text-xs text-gray-500 leading-relaxed mb-3">
-              Haz clic en el enlace para activar tu cuenta. Puede tardar unos minutos.
-            </p>
-            <p className="text-xs text-gray-500 leading-relaxed mb-7">
-              ¿No ves el correo? Revisa tu carpeta de spam o escríbenos a{' '}
-              <a
-                href="mailto:admin@proyelec.com"
-                className="text-skyblue hover:text-skyblue/80 underline transition-colors"
-              >
-                admin@proyelec.com
-              </a>
-            </p>
-            <Link
-              href="/login"
-              className="block w-full py-3 bg-skyblue text-navy text-sm font-bold rounded-lg hover:bg-skyblue/90 transition-colors text-center cursor-pointer"
-            >
-              Ir al inicio de sesión
-            </Link>
-          </div>
-        </div>
-      </main>
-    )
-  }
-
-  // ── Register form ──────────────────────────────────────────────────────────
   return (
     <main className="min-h-screen bg-navy relative flex items-center justify-center px-4 py-8 overflow-y-auto">
       <div aria-hidden className="fixed inset-0 pointer-events-none">

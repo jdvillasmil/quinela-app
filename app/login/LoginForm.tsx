@@ -25,11 +25,7 @@ function resolveAuthError(message: string): string {
   return 'Error al iniciar sesión. Intenta de nuevo.'
 }
 
-interface Props {
-  urlError?: string
-}
-
-export default function LoginForm({ urlError }: Props) {
+export default function LoginForm() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -82,13 +78,6 @@ export default function LoginForm({ urlError }: Props) {
         {/* Card */}
         <div className="bg-[#071729] border border-[#1E3A6E]/60 rounded-2xl shadow-2xl shadow-black/40 px-8 py-7">
           <div className="h-px bg-gradient-to-r from-transparent via-skyblue/25 to-transparent mb-6" />
-
-          {urlError === 'link_expirado' && (
-            <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/25 text-amber-400 rounded-lg px-4 py-3 text-xs mb-5 leading-relaxed">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>El enlace de verificación expiró o ya fue utilizado. Regístrate de nuevo si es necesario.</span>
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div>
