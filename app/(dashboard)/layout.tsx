@@ -53,7 +53,7 @@ export default async function DashboardLayout({
         <div className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Logo / Title */}
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 flex items-center justify-center">
+            <div className="w-8 h-8 flex items-center justify-center bg-white rounded-lg p-1">
               <Image src="/favicon.png" alt="Proyelec" width={32} height={32} priority />
             </div>
             <span className="text-lg font-bold tracking-tight">
