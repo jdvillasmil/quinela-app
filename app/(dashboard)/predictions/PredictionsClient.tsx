@@ -43,7 +43,13 @@ interface Props {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function isLocked(match: Match): boolean {
-  return match.status === 'live' || match.status === 'finished'
+  // Date check mirrors the RLS policy: a match locks at kickoff even if
+  // the CRON job hasn't advanced its status yet.
+  return (
+    match.status === 'live' ||
+    match.status === 'finished' ||
+    new Date(match.match_date) <= new Date()
+  )
 }
 
 function formatDate(dateStr: string): string {

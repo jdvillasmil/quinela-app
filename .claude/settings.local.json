@@ -30,7 +30,11 @@
       "Bash(curl *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Workspace_Desarrollo\\\\quinela-app\\\\app\" -Recurse -Filter \"*.ts\" -o -Filter \"*.tsx\")",
       "Bash(Select-Object FullName)",
-      "Bash(Get-ChildItem -Path \"C:\\\\Workspace_Desarrollo\\\\quinela-app\" -Recurse -Filter \"*.sql\")"
+      "Bash(Get-ChildItem -Path \"C:\\\\Workspace_Desarrollo\\\\quinela-app\" -Recurse -Filter \"*.sql\")",
+      "Bash(supabase --version)",
+      "Bash(supabase status *)",
+      "PowerShell(Get-Command *)",
+      "PowerShell(npx tsc --noEmit)"
     ]
   }
 }
