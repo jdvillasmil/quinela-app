@@ -99,8 +99,10 @@ export default async function PredictionsPage() {
   type StatRow = { match_id: number; predicted_home: number; predicted_away: number; prediction_count: number }
   type MatchPredictionStats = Record<number, { stats: Omit<StatRow, 'match_id'>[]; total: number }>
 
+  // Group stage locks at tournament start (mirrors isLocked() and RLS)
+  const tournamentStarted = new Date() >= new Date('2026-06-11T19:00:00Z')
   const lockedMatchIds = matches
-    .filter((m) => m.status === 'live' || m.status === 'finished')
+    .filter((m) => tournamentStarted || m.status === 'live' || m.status === 'finished')
     .map((m) => m.id)
 
   let matchPredictionStats: MatchPredictionStats = {}

@@ -42,7 +42,16 @@ interface Props {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// Tournament start — the whole group stage (scores + 1°/2° picks) locks here.
+// Mirrors the RLS policies in migration 20260611000003.
+const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
+
 function isLocked(match: Match): boolean {
+  // Group-stage predictions all close at tournament start, not at each
+  // match's own kickoff.
+  if (match.phase === 'groups' && new Date() >= TOURNAMENT_START) {
+    return true
+  }
   // Date check mirrors the RLS policy: a match locks at kickoff even if
   // the CRON job hasn't advanced its status yet.
   return (
