@@ -34,6 +34,5 @@ jobs:
       - name: Trigger Update Matches API
         if: steps.check-date.outputs.should_run == 'true' || github.event_name == 'workflow_dispatch'
         run: |
-          curl --fail -X POST https://quinela-app.vercel.app/api/cron/update-matches \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "Content-Type: application/json"
+          curl --fail --location https://quinela-app.vercel.app/api/cron/update-matches \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
