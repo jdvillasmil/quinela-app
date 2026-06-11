@@ -95,6 +95,32 @@ export default async function PredictionsPage() {
     groupStandingsData[gs.group_name] = { first_place: gs.first_place, second_place: gs.second_place }
   }
 
+  // Fetch aggregated prediction stats for locked matches (security definer bypasses RLS)
+  type StatRow = { match_id: number; predicted_home: number; predicted_away: number; prediction_count: number }
+  type MatchPredictionStats = Record<number, { stats: Omit<StatRow, 'match_id'>[]; total: number }>
+
+  const lockedMatchIds = matches
+    .filter((m) => m.status === 'live' || m.status === 'finished')
+    .map((m) => m.id)
+
+  let matchPredictionStats: MatchPredictionStats = {}
+
+  if (lockedMatchIds.length > 0) {
+    const { data: statsRaw } = await (supabase as any)
+      .rpc('get_match_prediction_stats', { p_match_ids: lockedMatchIds })
+    for (const row of (statsRaw ?? []) as StatRow[]) {
+      if (!matchPredictionStats[row.match_id]) {
+        matchPredictionStats[row.match_id] = { stats: [], total: 0 }
+      }
+      matchPredictionStats[row.match_id].stats.push({
+        predicted_home: row.predicted_home,
+        predicted_away: row.predicted_away,
+        prediction_count: row.prediction_count,
+      })
+      matchPredictionStats[row.match_id].total += Number(row.prediction_count)
+    }
+  }
+
   return (
     <PredictionsClient
       groupData={groupData}
@@ -102,6 +128,7 @@ export default async function PredictionsPage() {
       specialPrediction={specialPrediction}
       groupStandingsData={groupStandingsData}
       username={username}
+      matchPredictionStats={matchPredictionStats}
     />
   )
 }

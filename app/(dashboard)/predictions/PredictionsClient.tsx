@@ -20,12 +20,24 @@ interface GroupData {
   [group: string]: MatchWithPrediction[]
 }
 
+interface PredictionStatRow {
+  predicted_home: number
+  predicted_away: number
+  prediction_count: number
+}
+
+interface MatchStatsData {
+  stats: PredictionStatRow[]
+  total: number
+}
+
 interface Props {
   groupData: GroupData
   groups: string[]
   specialPrediction: SpecialPrediction | null
   groupStandingsData: Record<string, { first_place: string; second_place: string } | null>
   username: string
+  matchPredictionStats: Record<number, MatchStatsData>
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -105,6 +117,39 @@ function ScoreInput({ value, onChange, disabled, id }: ScoreInputProps) {
   )
 }
 
+// ─── Prediction Stats (locked matches) ────────────────────────────────────────
+
+function MatchPredictionStatsView({ data }: { data: MatchStatsData }) {
+  if (data.total === 0) return null
+  const top = data.stats.slice(0, 3)
+  return (
+    <div className="px-4 pb-3 border-t border-white/6 pt-2.5 space-y-1.5">
+      <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">
+        Pronósticos · {data.total} {data.total === 1 ? 'participante' : 'participantes'}
+      </p>
+      {top.map((s) => {
+        const pct = Math.round((Number(s.prediction_count) / data.total) * 100)
+        return (
+          <div key={`${s.predicted_home}-${s.predicted_away}`} className="flex items-center gap-2">
+            <span className="text-xs font-bold text-gray-300 w-7 text-center shrink-0 tabular-nums">
+              {s.predicted_home}–{s.predicted_away}
+            </span>
+            <div className="flex-1 bg-white/8 rounded-full h-1.5 overflow-hidden">
+              <div
+                className="h-full bg-skyblue/50 rounded-full"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="text-[10px] text-gray-500 w-7 text-right shrink-0 tabular-nums">
+              {pct}%
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── Match Card ───────────────────────────────────────────────────────────────
 
 interface MatchCardProps {
@@ -113,9 +158,10 @@ interface MatchCardProps {
   awayScore: string
   onHomeChange: (v: string) => void
   onAwayChange: (v: string) => void
+  matchStats?: MatchStatsData
 }
 
-function MatchCard({ match, homeScore, awayScore, onHomeChange, onAwayChange }: MatchCardProps) {
+function MatchCard({ match, homeScore, awayScore, onHomeChange, onAwayChange, matchStats }: MatchCardProps) {
   const locked = isLocked(match)
 
   return (
@@ -189,6 +235,9 @@ function MatchCard({ match, homeScore, awayScore, onHomeChange, onAwayChange }: 
           </div>
         )}
       </div>
+
+      {/* Aggregated prediction stats (locked matches only) */}
+      {locked && matchStats && <MatchPredictionStatsView data={matchStats} />}
     </div>
   )
 }
@@ -266,9 +315,10 @@ interface GroupPanelProps {
   matches: MatchWithPrediction[]
   groupName: string
   initialStandings: { first_place: string; second_place: string } | null
+  matchPredictionStats: Record<number, MatchStatsData>
 }
 
-function GroupPanel({ matches, groupName }: GroupPanelProps) {
+function GroupPanel({ matches, groupName, matchPredictionStats }: GroupPanelProps) {
   const initialScores = () => {
     const map: Record<number, { home: string; away: string }> = {}
     for (const m of matches) {
@@ -367,6 +417,7 @@ function GroupPanel({ matches, groupName }: GroupPanelProps) {
             awayScore={scores[match.id]?.away ?? ''}
             onHomeChange={(v) => setHome(match.id, v)}
             onAwayChange={(v) => setAway(match.id, v)}
+            matchStats={matchPredictionStats[match.id]}
           />
         ))}
       </div>
@@ -573,7 +624,7 @@ function SpecialPredictionsPanel({ initialData, locked }: { initialData: Special
 
 // ─── Main Client Component ────────────────────────────────────────────────────
 
-export default function PredictionsClient({ groupData, groups, specialPrediction, groupStandingsData, username }: Props) {
+export default function PredictionsClient({ groupData, groups, specialPrediction, groupStandingsData, username, matchPredictionStats }: Props) {
   const [activeGroup, setActiveGroup] = useState(groups[0] ?? 'A')
   const [mainTab, setMainTab] = useState<'groups' | 'special'>('groups')
   const [isPrinting, setIsPrinting] = useState(false)
@@ -714,6 +765,7 @@ export default function PredictionsClient({ groupData, groups, specialPrediction
               matches={groupData[activeGroup]}
               groupName={activeGroup}
               initialStandings={groupStandingsData[activeGroup] ?? null}
+              matchPredictionStats={matchPredictionStats}
             />
           )}
         </>

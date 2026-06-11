@@ -26,7 +26,11 @@
       "Bash(git checkout *)",
       "Bash(git merge *)",
       "Bash(npm install *)",
-      "PowerShell(gh auth *)"
+      "PowerShell(gh auth *)",
+      "Bash(curl *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Workspace_Desarrollo\\\\quinela-app\\\\app\" -Recurse -Filter \"*.ts\" -o -Filter \"*.tsx\")",
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Workspace_Desarrollo\\\\quinela-app\" -Recurse -Filter \"*.sql\")"
     ]
   }
 }
