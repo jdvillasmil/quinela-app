@@ -33,7 +33,7 @@ function formatMatchDate(dateStr: string): { day: string; time: string } {
   return { day, time }
 }
 
-const TOURNAMENT_START = new Date('2026-06-11T18:00:00Z') // 14:00 Bogotá (UTC-4)
+const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z') // 15:00 Bogotá (UTC-4)
 const GROUP_MATCHES = 72
 
 interface TimeLeft {
@@ -233,7 +233,7 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
               {timeLeft?.started ? 'El torneo está en curso' : 'El torneo comienza en'}
             </p>
             <p className="text-white/35 text-xs mb-6">
-              11 jun 2026 · 14:00 h (UTC-4)
+              11 jun 2026 · 15:00 h (UTC-4)
             </p>
 
             {timeLeft === null ? (
