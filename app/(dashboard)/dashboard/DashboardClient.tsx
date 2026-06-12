@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Trophy, Target, ChevronRight, Star, CalendarDays, ChevronDown, LayoutGrid } from 'lucide-react'
 import type { LeaderboardEntry } from '@/types'
-import type { NextMatch, GroupStanding } from './page'
+import type { NextMatch, LiveMatch, GroupStanding } from './page'
 import { teamEs } from '@/lib/i18n/teams'
 import TeamFlag from '@/components/ui/TeamFlag'
 
@@ -14,6 +15,7 @@ interface Props {
   totalUsers: number
   predictionsCount: number
   nextMatches: NextMatch[]
+  liveMatches: LiveMatch[]
   groupStandings: GroupStanding[]
 }
 
@@ -190,9 +192,10 @@ function MisGrupos({ groupStandings }: { groupStandings: GroupStanding[] }) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export default function DashboardClient({ firstName, entry, totalUsers, predictionsCount, nextMatches, groupStandings }: Props) {
+export default function DashboardClient({ firstName, entry, totalUsers, predictionsCount, nextMatches, liveMatches, groupStandings }: Props) {
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null)
   const [rulesOpen, setRulesOpen] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     const update = () => setTimeLeft(getTimeLeft(TOURNAMENT_START))
@@ -200,6 +203,14 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
     const id = setInterval(update, 1000)
     return () => clearInterval(id)
   }, [])
+
+  // While a match is live, re-fetch server data so the score the admin
+  // saves shows up without a manual reload
+  useEffect(() => {
+    if (liveMatches.length === 0) return
+    const id = setInterval(() => router.refresh(), 60000)
+    return () => clearInterval(id)
+  }, [liveMatches.length, router])
 
   const progress = Math.round((predictionsCount / GROUP_MATCHES) * 100)
   const points = entry?.total_points ?? 0
@@ -266,15 +277,52 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
           </div>
 
           {/* Divider */}
-          {nextMatches.length > 0 && (
+          {(liveMatches.length > 0 || nextMatches.length > 0) && (
             <>
               <div className="hidden sm:block w-px bg-white/8 my-6 flex-shrink-0" />
               <div className="sm:hidden h-px bg-white/8 mx-6" />
             </>
           )}
 
-          {/* Right: próximo partido */}
-          {nextMatches.length > 0 && (() => {
+          {/* Right: partido en vivo (marcador actualizado por el admin) */}
+          {liveMatches.length > 0 && (() => {
+            const match = liveMatches[0]
+            return (
+              <div className="flex-1 p-6 sm:p-8 flex flex-col justify-center">
+                <p className="flex items-center gap-2 text-red-400 text-xs font-semibold uppercase tracking-widest mb-4">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  En vivo
+                </p>
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <TeamFlag team={match.home_team} size="md" className="rounded-sm" />
+                      <span className="text-sm font-semibold text-white truncate">{teamEs(match.home_team)}</span>
+                    </div>
+                    <span className="text-2xl font-bold text-white tabular-nums">{match.home_score ?? 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <TeamFlag team={match.away_team} size="md" className="rounded-sm" />
+                      <span className="text-sm font-semibold text-white truncate">{teamEs(match.away_team)}</span>
+                    </div>
+                    <span className="text-2xl font-bold text-white tabular-nums">{match.away_score ?? 0}</span>
+                  </div>
+                </div>
+                {match.venue && (
+                  <p className="text-[11px] text-gray-600 truncate">{match.venue}</p>
+                )}
+                {match.group_name && (
+                  <span className="inline-block mt-3 text-[10px] font-semibold text-skyblue/60 bg-skyblue/8 border border-skyblue/15 rounded-md px-2 py-0.5 uppercase tracking-wide w-fit">
+                    Grupo {match.group_name}
+                  </span>
+                )}
+              </div>
+            )
+          })()}
+
+          {/* Right: próximo partido (cuando no hay partido en vivo) */}
+          {liveMatches.length === 0 && nextMatches.length > 0 && (() => {
             const match = nextMatches[0]
             const { day, time } = formatMatchDate(match.match_date)
             return (
@@ -312,8 +360,45 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
         </div>
       </div>
 
-      {/* Próximos partidos (2° y 3° en adelante) */}
-      {nextMatches.length > 1 && (
+      {/* Otros partidos en vivo (cuando hay más de uno) */}
+      {liveMatches.length > 1 && (
+        <div className="bg-[#071729] rounded-2xl border border-red-500/20 shadow-lg overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/6">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-[11px] font-semibold text-red-400 uppercase tracking-wider">
+              También en vivo
+            </span>
+          </div>
+          <ul className="divide-y divide-white/5">
+            {liveMatches.slice(1).map((match) => (
+              <li key={match.id} className="flex items-center gap-4 px-5 py-3.5">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 text-sm font-medium text-white">
+                    <TeamFlag team={match.home_team} size="sm" className="rounded-sm" />
+                    <span className="truncate">{teamEs(match.home_team)}</span>
+                    <span className="text-base font-bold tabular-nums flex-shrink-0">
+                      {match.home_score ?? 0} - {match.away_score ?? 0}
+                    </span>
+                    <TeamFlag team={match.away_team} size="sm" className="rounded-sm" />
+                    <span className="truncate">{teamEs(match.away_team)}</span>
+                  </div>
+                  {match.venue && (
+                    <p className="text-[11px] text-gray-600 mt-0.5 truncate">{match.venue}</p>
+                  )}
+                </div>
+                {match.group_name && (
+                  <span className="flex-shrink-0 text-[10px] font-semibold text-skyblue/60 bg-skyblue/8 border border-skyblue/15 rounded-md px-2 py-0.5 uppercase tracking-wide">
+                    Gr. {match.group_name}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Próximos partidos (los que no aparecen en la tarjeta principal) */}
+      {(liveMatches.length > 0 ? nextMatches.length > 0 : nextMatches.length > 1) && (
         <div className="bg-[#071729] rounded-2xl border border-[#1E3A6E]/50 shadow-lg overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/6">
             <CalendarDays className="w-4 h-4 text-skyblue" />
@@ -322,7 +407,7 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
             </span>
           </div>
           <ul className="divide-y divide-white/5">
-            {nextMatches.slice(1).map((match) => {
+            {(liveMatches.length > 0 ? nextMatches : nextMatches.slice(1)).map((match) => {
               const { day, time } = formatMatchDate(match.match_date)
               return (
                 <li key={match.id} className="flex items-center gap-4 px-5 py-3.5">

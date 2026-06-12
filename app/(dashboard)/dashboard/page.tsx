@@ -19,6 +19,11 @@ export interface NextMatch {
   group_name: string | null
 }
 
+export interface LiveMatch extends NextMatch {
+  home_score: number | null
+  away_score: number | null
+}
+
 export interface TeamStats {
   team: string
   flag: string
@@ -104,7 +109,7 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [profileRes, entryRes, usersRes, groupMatchesRes, nextMatchesRes] = await Promise.all([
+  const [profileRes, entryRes, usersRes, groupMatchesRes, nextMatchesRes, liveMatchesRes] = await Promise.all([
     supabase.from('profiles').select('first_name, username').eq('id', user.id).single(),
     (supabase as any).from('leaderboard').select('*').eq('user_id', user.id).maybeSingle(),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'user'),
@@ -120,6 +125,11 @@ export default async function DashboardPage() {
       .eq('status', 'scheduled')
       .order('match_date', { ascending: true })
       .limit(3),
+    supabase
+      .from('matches')
+      .select('id, home_team, away_team, home_flag, away_flag, match_date, venue, group_name, home_score, away_score')
+      .eq('status', 'live')
+      .order('match_date', { ascending: true }),
   ])
 
   const profile = profileRes.data as { first_name: string | null; username: string } | null
@@ -127,6 +137,7 @@ export default async function DashboardPage() {
   const totalUsers = usersRes.count
   const groupMatches = (groupMatchesRes.data ?? []) as GroupMatch[]
   const nextMatches = (nextMatchesRes.data ?? []) as NextMatch[]
+  const liveMatches = (liveMatchesRes.data ?? []) as LiveMatch[]
   const entry = (entryRaw as LeaderboardEntry) ?? null
   const matchIds = groupMatches.map((m) => m.id)
 
@@ -166,6 +177,7 @@ export default async function DashboardPage() {
       totalUsers={totalUsers ?? 0}
       predictionsCount={predictionsCount}
       nextMatches={nextMatches}
+      liveMatches={liveMatches}
       groupStandings={groupStandings}
     />
   )
