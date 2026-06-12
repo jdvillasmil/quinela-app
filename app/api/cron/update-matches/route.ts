@@ -84,7 +84,7 @@ export async function GET(request: Request) {
         // 6. If match changed to finished, calculate points
         if (newStatus === 'finished' && matchDb.status !== 'finished') {
           const { error: rpcError } = await supabaseAdmin
-            .rpc('calculate_match_points' as any, { match_id: matchDb.id } as any);
+            .rpc('calculate_match_points' as any, { p_match_id: matchDb.id } as any);
             
           if (rpcError) {
             console.error(`Failed to calculate points for match ${matchDb.id}:`, rpcError);

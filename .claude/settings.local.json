@@ -34,7 +34,13 @@
       "Bash(supabase --version)",
       "Bash(supabase status *)",
       "PowerShell(Get-Command *)",
-      "PowerShell(npx tsc --noEmit)"
+      "PowerShell(npx tsc --noEmit)",
+      "Bash(gh run *)",
+      "Bash(python -c \"import json,sys; runs=json.load\\(sys.stdin\\); [print\\(r['databaseId'], r['createdAt'], r['conclusion']\\) for r in runs]\")",
+      "Bash(node scripts/backfill-api-match-ids.mjs --dry-run)",
+      "PowerShell(node scripts/backfill-api-match-ids.mjs --dry-run)",
+      "PowerShell(ConvertTo-Json *)",
+      "PowerShell(gh run *)"
     ]
   }
 }

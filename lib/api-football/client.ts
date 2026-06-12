@@ -1,4 +1,5 @@
 export interface ApiFootballFixtureResponse {
+  errors?: Record<string, string> | unknown[];
   response: Array<{
     fixture: {
       id: number;
@@ -16,33 +17,45 @@ export interface ApiFootballFixtureResponse {
 
 export type MappedMatchStatus = 'scheduled' | 'live' | 'finished';
 
+// API-Football allows max 20 ids per fixtures?ids= request
+const FIXTURE_IDS_BATCH_SIZE = 20;
+
 /**
  * Maps API-Football status short codes to our MatchStatus enum.
  */
 export function mapApiFootballStatus(shortStatus: string): MappedMatchStatus {
-  const liveStatuses = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'SUSP', 'INT'];
+  const liveStatuses = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
   const finishedStatuses = ['FT', 'AET', 'PEN', 'AWD', 'WO'];
-  
+
   if (finishedStatuses.includes(shortStatus)) {
     return 'finished';
   }
   if (liveStatuses.includes(shortStatus)) {
     return 'live';
   }
-  
+
   // Default to scheduled for NS, TBD, PST, CANC, ABD, etc.
   return 'scheduled';
 }
 
 /**
- * Fetches match details from API-Football.
- * Supports passing multiple comma-separated IDs to optimize requests.
+ * API-Football returns HTTP 200 even on auth/quota/param failures and reports
+ * them in the `errors` field — as an object when populated, an empty array otherwise.
  */
-export async function getFixturesByIds(ids: string[]): Promise<ApiFootballFixtureResponse> {
-  if (!ids || ids.length === 0) {
-    return { response: [] };
-  }
+function assertNoApiErrors(data: ApiFootballFixtureResponse): void {
+  const errors = data.errors;
+  if (!errors) return;
 
+  const hasErrors = Array.isArray(errors)
+    ? errors.length > 0
+    : Object.keys(errors).length > 0;
+
+  if (hasErrors) {
+    throw new Error(`API-Football returned errors: ${JSON.stringify(errors)}`);
+  }
+}
+
+async function fetchFixturesBatch(ids: string[]): Promise<ApiFootballFixtureResponse> {
   const apiKey = process.env.API_FOOTBALL_KEY;
   if (!apiKey) {
     throw new Error('API_FOOTBALL_KEY is not configured.');
@@ -63,6 +76,26 @@ export async function getFixturesByIds(ids: string[]): Promise<ApiFootballFixtur
     throw new Error(`API-Football request failed with status: ${response.status}`);
   }
 
-  const data = await response.json();
-  return data as ApiFootballFixtureResponse;
+  const data = (await response.json()) as ApiFootballFixtureResponse;
+  assertNoApiErrors(data);
+  return data;
+}
+
+/**
+ * Fetches match details from API-Football.
+ * Batches requests in groups of 20 ids (API limit for the `ids` parameter).
+ */
+export async function getFixturesByIds(ids: string[]): Promise<ApiFootballFixtureResponse> {
+  if (!ids || ids.length === 0) {
+    return { response: [] };
+  }
+
+  const batches: string[][] = [];
+  for (let i = 0; i < ids.length; i += FIXTURE_IDS_BATCH_SIZE) {
+    batches.push(ids.slice(i, i + FIXTURE_IDS_BATCH_SIZE));
+  }
+
+  const results = await Promise.all(batches.map(fetchFixturesBatch));
+
+  return { response: results.flatMap(r => r.response) };
 }
