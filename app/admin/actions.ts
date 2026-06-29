@@ -60,5 +60,35 @@ export async function updateMatchResult(
     return { success: false, message: 'Partido guardado, pero falló el recálculo de puntos' }
   }
 
+  // If group phase, check whether all group matches are finished and trigger group standing points
+  const { data: match } = await (supabase as any)
+    .from('matches')
+    .select('phase, group_name')
+    .eq('id', matchId)
+    .single()
+
+  if (match?.phase === 'groups' && match?.group_name) {
+    const { data: groupMatches } = await (supabase as any)
+      .from('matches')
+      .select('status')
+      .eq('phase', 'groups')
+      .eq('group_name', match.group_name)
+
+    const allFinished = groupMatches?.every((m: { status: string }) => m.status === 'finished')
+
+    if (allFinished) {
+      const { error: groupRpcError } = await (supabase as any).rpc('calculate_group_standing_points', {
+        p_group_name: match.group_name,
+      })
+
+      if (groupRpcError) {
+        console.error('Error calculando puntos de clasificación de grupo:', groupRpcError)
+        return { success: true, message: 'Partido finalizado y puntos recalculados. (Advertencia: falló el cálculo de clasificación del grupo)' }
+      }
+
+      return { success: true, message: `Partido finalizado, puntos recalculados y clasificación del Grupo ${match.group_name} calculada.` }
+    }
+  }
+
   return { success: true, message: 'Partido finalizado y puntos recalculados.' }
 }
