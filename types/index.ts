@@ -66,7 +66,9 @@ export interface BracketPrediction {
   id: number
   user_id: string
   match_id: number
-  predicted_winner: string
+  predicted_winner: string | null
+  predicted_home: number | null
+  predicted_away: number | null
   points_earned: number
 }
 
@@ -121,7 +123,7 @@ export type Database = {
       bracket_predictions: {
         Row: BracketPrediction
         Insert: Omit<BracketPrediction, 'id'>
-        Update: Partial<Pick<BracketPrediction, 'predicted_winner' | 'points_earned'>>
+        Update: Partial<Pick<BracketPrediction, 'predicted_winner' | 'predicted_home' | 'predicted_away' | 'points_earned'>>
         Relationships: []
       }
     }

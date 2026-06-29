@@ -46,6 +46,7 @@ export async function updateMatchResult(
   revalidatePath('/admin/matches')
   revalidatePath('/dashboard')
   revalidatePath('/predictions')
+  revalidatePath('/bracket')
 
   // Points are only calculated on the final score
   if (status === 'live') {

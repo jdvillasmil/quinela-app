@@ -9,7 +9,7 @@ export interface SaveResult {
 }
 
 export async function saveBracketPredictions(
-  payload: { match_id: number; predicted_winner: string }[]
+  payload: { match_id: number; predicted_home: number; predicted_away: number }[]
 ): Promise<SaveResult> {
   const supabase = await createClient()
 
@@ -22,13 +22,14 @@ export async function saveBracketPredictions(
   }
 
   if (payload.length === 0) {
-     return { success: true, message: 'No hay predicciones válidas para guardar.' }
+    return { success: true, message: 'No hay predicciones válidas para guardar.' }
   }
 
   const upsertData = payload.map((p) => ({
     user_id: user.id,
     match_id: p.match_id,
-    predicted_winner: p.predicted_winner,
+    predicted_home: p.predicted_home,
+    predicted_away: p.predicted_away,
     points_earned: 0,
   }))
 

@@ -40,7 +40,9 @@
       "Bash(node scripts/backfill-api-match-ids.mjs --dry-run)",
       "PowerShell(node scripts/backfill-api-match-ids.mjs --dry-run)",
       "PowerShell(ConvertTo-Json *)",
-      "PowerShell(gh run *)"
+      "PowerShell(gh run *)",
+      "PowerShell(supabase db *)",
+      "Bash(npx supabase *)"
     ]
   }
 }

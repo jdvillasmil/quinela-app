@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useCallback, useMemo } from 'react'
+import { useState, useTransition, useMemo } from 'react'
 import { Loader2, Save, CheckCircle, AlertCircle } from 'lucide-react'
 import type { Match, BracketPrediction } from '@/types'
 import { saveBracketPredictions } from './actions'
@@ -16,7 +16,6 @@ const CS = CW + GX // column step = 164
 const PAD = 12    // canvas padding
 const LABEL_H = 24
 
-// Column index helpers
 const COL_LABELS = ['1/16','Octavos','Cuartos','Semis','Final','Semis','Cuartos','Octavos','1/16']
 const colX = (col: number) => PAD + col * CS
 
@@ -30,7 +29,8 @@ interface Layout {
   third: Match | null
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+type ScorePair = { home: number | ''; away: number | '' }
+
 function winRef(s: string | null | undefined): number | null {
   if (!s || !s.startsWith('W')) return null
   const n = parseInt(s.slice(1), 10)
@@ -53,8 +53,6 @@ function computeLayout(matches: Match[]): Layout {
   const sfAll  = sorted('sf')
   const finalMatch = matches.find(m => m.phase === 'final')
 
-  // Left half (cols 0-3): r32 73-80, r16 89-92, qf 97-98, sf 101
-  // Right half (cols 5-8): sf 102, qf 99-100, r16 93-96, r32 81-88
   const leftR32  = r32All.slice(0, 8)
   const rightR32 = r32All.slice(8)
   const leftR16  = r16All.slice(0, 4)
@@ -64,7 +62,6 @@ function computeLayout(matches: Match[]): Layout {
   const leftSF   = sfAll[0]
   const rightSF  = sfAll[1]
 
-  // y-positions (match.id → y in canvas, before PAD)
   const yOf: Record<number, number> = {}
   leftR32.forEach((m, i)  => { yOf[m.id] = i * SH })
   rightR32.forEach((m, i) => { yOf[m.id] = i * SH })
@@ -82,7 +79,6 @@ function computeLayout(matches: Match[]): Layout {
   if (rightSF)    yOf[rightSF.id]    = calcMid(rightSF)
   if (finalMatch) yOf[finalMatch.id] = calcMid(finalMatch)
 
-  // Build nodes
   const nodes: MatchPos[] = []
   const addNodes = (ms: (Match | undefined)[], col: number, isFinal = false) => {
     for (const m of ms) {
@@ -99,10 +95,8 @@ function computeLayout(matches: Match[]): Layout {
   addNodes(rightR16, 7)
   addNodes(rightR32, 8)
 
-  // Build SVG edges
   const edges: SVGEdge[] = []
 
-  // Left side: child right edge → mx → parent left edge
   const leftEdges = (parentMatches: (Match | undefined)[], parentCol: number) => {
     for (const parent of parentMatches) {
       if (!parent) continue
@@ -132,7 +126,6 @@ function computeLayout(matches: Match[]): Layout {
     }
   }
 
-  // Right side: child left edge → mx → parent right edge
   const rightEdges = (parentMatches: (Match | undefined)[], parentCol: number) => {
     for (const parent of parentMatches) {
       if (!parent) continue
@@ -162,12 +155,10 @@ function computeLayout(matches: Match[]): Layout {
     }
   }
 
-  // Left side: r16←r32, qf←r16, sf←qf
   leftEdges(leftR16, 1)
   leftEdges(leftQF, 2)
   leftEdges([leftSF], 3)
 
-  // Final: left sf → final (left connector), right sf → final (right connector)
   if (finalMatch && leftSF && rightSF) {
     const fcy   = PAD + (yOf[finalMatch.id] ?? 0) + CH / 2
     const lscy  = PAD + (yOf[leftSF.id] ?? 0) + CH / 2
@@ -184,7 +175,6 @@ function computeLayout(matches: Match[]): Layout {
     edges.push({ x1: mxR, y1: fcy, x2: colX(4) + CW, y2: fcy })
   }
 
-  // Right side: sf←qf, qf←r16, r16←r32
   rightEdges([rightSF], 5)
   rightEdges(rightQF, 6)
   rightEdges(rightR16, 7)
@@ -203,63 +193,84 @@ interface Props {
 }
 
 export default function BracketClient({ initialMatches, initialPredictions }: Props) {
-  const [predictions, setPredictions] = useState<Record<number, string>>(() => {
-    const map: Record<number, string> = {}
-    for (const p of initialPredictions) map[p.match_id] = p.predicted_winner
+  const [scores, setScores] = useState<Record<number, ScorePair>>(() => {
+    const map: Record<number, ScorePair> = {}
+    for (const p of initialPredictions) {
+      map[p.match_id] = {
+        home: p.predicted_home ?? '',
+        away: p.predicted_away ?? '',
+      }
+    }
     return map
   })
   const [isPending, startTransition] = useTransition()
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
 
-  const isBracketLocked = new Date() > new Date('2026-07-08T00:00:00-04:00')
-
-  const resolveTeam = useCallback((teamStr: string): string => {
+  // Regular function (not useCallback) so recursive calls always read the
+  // current render's scores/initialMatches without any stale-closure risk.
+  function resolveTeam(teamStr: string): string {
     if (!teamStr) return 'TBD'
+
     if (teamStr.startsWith('W')) {
       const n = parseInt(teamStr.slice(1), 10)
-      const match = initialMatches.find(m => m.match_number === n)
-      if (match && predictions[match.id]) return predictions[match.id]
-      return teamStr
+      const m = initialMatches.find(x => x.match_number === n)
+      if (m) {
+        // Actual finished result takes priority
+        if (m.status === 'finished' && m.home_score != null && m.away_score != null) {
+          if (m.home_score > m.away_score) return resolveTeam(m.home_team)
+          if (m.away_score > m.home_score) return resolveTeam(m.away_team)
+          return 'TBD' // draw (went to penalties — db stores regulation score)
+        }
+        // Fall back to user's predicted score for visual bracket feedback
+        const s = scores[m.id]
+        if (s && s.home !== '' && s.away !== '' && (s.home as number) !== (s.away as number)) {
+          return (s.home as number) > (s.away as number)
+            ? resolveTeam(m.home_team)
+            : resolveTeam(m.away_team)
+        }
+      }
+      return 'TBD'
     }
+
     if (teamStr.startsWith('L')) {
       const n = parseInt(teamStr.slice(1), 10)
-      const match = initialMatches.find(m => m.match_number === n)
-      if (match && predictions[match.id]) {
-        const h = resolveTeam(match.home_team)
-        const a = resolveTeam(match.away_team)
-        const w = predictions[match.id]
-        if (w === h) return a
-        if (w === a) return h
+      const m = initialMatches.find(x => x.match_number === n)
+      if (m) {
+        if (m.status === 'finished' && m.home_score != null && m.away_score != null) {
+          if (m.home_score > m.away_score) return resolveTeam(m.away_team)
+          if (m.away_score > m.home_score) return resolveTeam(m.home_team)
+          return 'TBD'
+        }
+        const s = scores[m.id]
+        if (s && s.home !== '' && s.away !== '' && (s.home as number) !== (s.away as number)) {
+          return (s.home as number) > (s.away as number)
+            ? resolveTeam(m.away_team)
+            : resolveTeam(m.home_team)
+        }
       }
-      return teamStr
+      return 'TBD'
     }
-    return teamStr
-  }, [initialMatches, predictions])
 
-  const handleSelect = (matchId: number, team: string) => {
-    if (isBracketLocked) return
-    if (!team || team === 'TBD' || team.startsWith('W') || team.startsWith('L')) return
-    setPredictions(prev => ({ ...prev, [matchId]: team }))
+    return teamStr
+  }
+
+  const handleScoreChange = (matchId: number, side: 'home' | 'away', value: string) => {
+    const num = value === '' ? '' : Math.max(0, parseInt(value, 10) || 0)
+    setScores(prev => ({
+      ...prev,
+      [matchId]: { ...(prev[matchId] ?? { home: '', away: '' }), [side]: num },
+    }))
     setResult(null)
   }
 
   const handleSave = () => {
-    if (isBracketLocked) return
-    const payload = initialMatches.map(m => {
-      const home = resolveTeam(m.home_team)
-      const away = resolveTeam(m.away_team)
-      const pred = predictions[m.id]
-      if (
-        pred &&
-        (pred === home || pred === away) &&
-        !pred.startsWith('W') &&
-        !pred.startsWith('L') &&
-        pred !== 'TBD'
-      ) {
-        return { match_id: m.id, predicted_winner: pred }
-      }
-      return null
-    }).filter(Boolean) as { match_id: number; predicted_winner: string }[]
+    const payload = initialMatches
+      .map(m => {
+        const s = scores[m.id]
+        if (!s || s.home === '' || s.away === '') return null
+        return { match_id: m.id, predicted_home: s.home as number, predicted_away: s.away as number }
+      })
+      .filter(Boolean) as { match_id: number; predicted_home: number; predicted_away: number }[]
 
     startTransition(async () => {
       const res = await saveBracketPredictions(payload)
@@ -274,45 +285,69 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
 
   // ── Card renderer ─────────────────────────────────────────────────────────
   const renderCard = (match: Match, isFinal = false) => {
-    const home   = resolveTeam(match.home_team)
-    const away   = resolveTeam(match.away_team)
-    const pred   = predictions[match.id]
-    const winner = pred === home || pred === away ? pred : null
+    const home = resolveTeam(match.home_team)
+    const away = resolveTeam(match.away_team)
+    const s = scores[match.id] ?? { home: '', away: '' }
 
-    const canPick = (t: string) =>
-      !isBracketLocked && !!t && t !== 'TBD' && !t.startsWith('W') && !t.startsWith('L')
+    // Only r32 matches have real teams now; later rounds are placeholders.
+    const isR32 = match.phase === 'r32'
+    const isEditable = isR32 &&
+      match.status === 'scheduled' &&
+      new Date(match.match_date) > new Date()
+    const hasPred = s.home !== '' && s.away !== ''
 
     const borderClass = isFinal
       ? 'border-skyblue/70 shadow-[0_0_12px_rgba(100,175,230,0.25)]'
       : 'border-[#1E3A6E]'
 
+    const rowBase = 'flex items-center flex-1 px-1.5 gap-1'
+    const teamLabel = `truncate min-w-0 flex-1 text-[10px] font-medium ${isR32 ? 'text-gray-300' : 'text-gray-500 italic'}`
+
+    if (!isR32) {
+      // Placeholder card — team names (propagated from finished results) but no inputs
+      return (
+        <div className={`flex flex-col h-full overflow-hidden rounded-lg border bg-[#071729]/60 ${borderClass} opacity-60`}>
+          <div className={`${rowBase} border-b border-[#1E3A6E]`}>
+            <span className={teamLabel}>{home === 'TBD' ? '—' : teamEs(home)}</span>
+          </div>
+          <div className={rowBase}>
+            <span className={teamLabel}>{away === 'TBD' ? '—' : teamEs(away)}</span>
+          </div>
+        </div>
+      )
+    }
+
+    const inputCls =
+      'w-7 shrink-0 text-center text-[11px] font-bold bg-[#0D1F3C] border border-[#1E3A6E] rounded text-skyblue focus:outline-none focus:border-skyblue disabled:opacity-40 disabled:cursor-not-allowed'
+
     return (
       <div className={`flex flex-col h-full overflow-hidden rounded-lg border bg-[#071729] ${borderClass}`}>
-        <button
-          onClick={() => canPick(home) && handleSelect(match.id, home)}
-          disabled={!canPick(home)}
-          className={[
-            'flex items-center w-full flex-1 px-2 border-b border-[#1E3A6E] text-[11px] font-medium transition-colors overflow-hidden',
-            winner === home ? 'bg-skyblue/20 text-skyblue font-bold' : 'text-gray-300 hover:bg-[#0D1F3C]',
-            !canPick(home) ? 'cursor-default' : 'cursor-pointer',
-          ].join(' ')}
-        >
-          <span className="truncate min-w-0 flex-1">{teamEs(home)}</span>
-          {winner === home && <CheckCircle className="w-3 h-3 text-skyblue ml-1 shrink-0" />}
-        </button>
-
-        <button
-          onClick={() => canPick(away) && handleSelect(match.id, away)}
-          disabled={!canPick(away)}
-          className={[
-            'flex items-center w-full flex-1 px-2 text-[11px] font-medium transition-colors overflow-hidden',
-            winner === away ? 'bg-skyblue/20 text-skyblue font-bold' : 'text-gray-300 hover:bg-[#0D1F3C]',
-            !canPick(away) ? 'cursor-default' : 'cursor-pointer',
-          ].join(' ')}
-        >
-          <span className="truncate min-w-0 flex-1">{teamEs(away)}</span>
-          {winner === away && <CheckCircle className="w-3 h-3 text-skyblue ml-1 shrink-0" />}
-        </button>
+        {/* Home row */}
+        <div className={`${rowBase} border-b border-[#1E3A6E] ${hasPred ? 'bg-skyblue/10' : ''}`}>
+          <span className={teamLabel}>{teamEs(home)}</span>
+          <input
+            type="number"
+            min={0}
+            max={99}
+            value={s.home}
+            disabled={!isEditable}
+            onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
+            className={inputCls}
+          />
+        </div>
+        {/* Away row */}
+        <div className={`${rowBase} ${hasPred ? 'bg-skyblue/10' : ''}`}>
+          <span className={teamLabel}>{teamEs(away)}</span>
+          <input
+            type="number"
+            min={0}
+            max={99}
+            value={s.away}
+            disabled={!isEditable}
+            onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
+            className={inputCls}
+          />
+        </div>
       </div>
     )
   }
@@ -325,9 +360,7 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
       <div>
         <h1 className="text-2xl font-bold text-white">Bracket Eliminatorio</h1>
         <p className="text-sm text-gray-400 mt-1">
-          {isBracketLocked
-            ? 'El bracket está bloqueado.'
-            : 'Haz clic en el equipo ganador para avanzarlo al siguiente cruce.'}
+          Ingresa el marcador predicho para cada cruce. Los partidos se bloquean al iniciar.
         </p>
       </div>
 
@@ -403,22 +436,18 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
               </div>
             ) : (
               <p className="text-xs text-gray-500">
-                {isBracketLocked
-                  ? 'El bracket se encuentra bloqueado.'
-                  : 'Guarda tu bracket antes de que inicien los partidos eliminatorios.'}
+                Guarda tu bracket antes de que inicien los partidos eliminatorios.
               </p>
             )}
           </div>
-          {!isBracketLocked && (
-            <button
-              onClick={handleSave}
-              disabled={isPending}
-              className="flex items-center justify-center gap-2 px-6 py-2.5 w-full sm:w-auto bg-skyblue text-navy text-sm font-bold rounded-lg hover:bg-skyblue/90 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
-            >
-              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {isPending ? 'Guardando...' : 'Guardar Bracket Completo'}
-            </button>
-          )}
+          <button
+            onClick={handleSave}
+            disabled={isPending}
+            className="flex items-center justify-center gap-2 px-6 py-2.5 w-full sm:w-auto bg-skyblue text-navy text-sm font-bold rounded-lg hover:bg-skyblue/90 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+          >
+            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {isPending ? 'Guardando...' : 'Guardar Bracket Completo'}
+          </button>
         </div>
       </div>
     </div>
