@@ -13,7 +13,7 @@ const CH = 60     // card height
 const SH = 80     // vertical slot per r32 match (card + gap)
 const GX = 36     // horizontal gap between columns (connector zone)
 const CS = CW + GX // column step = 164
-const PAD = 12    // canvas padding
+const PAD = 50    // canvas padding (extra left space for score badges)
 const LABEL_H = 24
 
 const COL_LABELS = ['1/16','Octavos','Cuartos','Semis','Final','Semis','Cuartos','Octavos','1/16']
@@ -35,6 +35,17 @@ function winRef(s: string | null | undefined): number | null {
   if (!s || !s.startsWith('W')) return null
   const n = parseInt(s.slice(1), 10)
   return isNaN(n) ? null : n
+}
+
+function getMatchResultClass(match: Match, s: ScorePair): 'green' | 'yellow' | 'red' | 'none' {
+  if (match.status !== 'finished' || match.home_score == null || match.away_score == null) return 'none'
+  if (s.home === '' || s.away === '') return 'red'
+  const ph = s.home as number, pa = s.away as number
+  const rh = match.home_score, ra = match.away_score
+  if (ph === rh && pa === ra) return 'green'
+  const ps = Math.sign(ph - pa), rs = Math.sign(rh - ra)
+  if (ps === rs || (ph - pa) === (rh - ra)) return 'yellow'
+  return 'red'
 }
 
 // ── Layout computation ────────────────────────────────────────────────────────
@@ -289,22 +300,32 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
     const away = resolveTeam(match.away_team)
     const s = scores[match.id] ?? { home: '', away: '' }
 
-    // Only r32 matches have real teams now; later rounds are placeholders.
     const isR32 = match.phase === 'r32'
     const isEditable = isR32 &&
       match.status === 'scheduled' &&
       new Date(match.match_date) > new Date()
     const hasPred = s.home !== '' && s.away !== ''
 
-    const borderClass = isFinal
-      ? 'border-skyblue/70 shadow-[0_0_12px_rgba(100,175,230,0.25)]'
-      : 'border-[#1E3A6E]'
+    let borderClass: string
+    if (isFinal) {
+      borderClass = 'border-skyblue/70 shadow-[0_0_12px_rgba(100,175,230,0.25)]'
+    } else if (isR32 && match.status === 'finished' && match.home_score != null) {
+      const rc = getMatchResultClass(match, s)
+      borderClass = rc === 'green'
+        ? 'border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
+        : rc === 'yellow'
+        ? 'border-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.3)]'
+        : rc === 'red'
+        ? 'border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]'
+        : 'border-[#1E3A6E]'
+    } else {
+      borderClass = 'border-[#1E3A6E]'
+    }
 
-    const rowBase = 'flex items-center flex-1 px-1.5 gap-1'
-    const teamLabel = `truncate min-w-0 flex-1 text-[10px] font-medium ${isR32 ? 'text-gray-300' : 'text-gray-500 italic'}`
+    const rowBase = 'flex items-center justify-center flex-1 px-1 gap-1.5'
+    const teamLabel = `max-w-[80px] truncate text-[10px] font-medium ${isR32 ? 'text-gray-300' : 'text-gray-500 italic'}`
 
     if (!isR32) {
-      // Placeholder card — team names (propagated from finished results) but no inputs
       return (
         <div className={`flex flex-col h-full overflow-hidden rounded-lg border bg-[#071729]/60 ${borderClass} opacity-60`}>
           <div className={`${rowBase} border-b border-[#1E3A6E]`}>
@@ -322,7 +343,6 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
 
     return (
       <div className={`flex flex-col h-full overflow-hidden rounded-lg border bg-[#071729] ${borderClass}`}>
-        {/* Home row */}
         <div className={`${rowBase} border-b border-[#1E3A6E] ${hasPred ? 'bg-skyblue/10' : ''}`}>
           <span className={teamLabel}>{teamEs(home)}</span>
           <input
@@ -335,7 +355,6 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
             className={inputCls}
           />
         </div>
-        {/* Away row */}
         <div className={`${rowBase} ${hasPred ? 'bg-skyblue/10' : ''}`}>
           <span className={teamLabel}>{teamEs(away)}</span>
           <input
@@ -353,6 +372,19 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
   }
 
   const canvasH = svgH + LABEL_H
+
+  const r32Matches = initialMatches.filter(m => m.phase === 'r32')
+  const editableCount = r32Matches.filter(m =>
+    m.status === 'scheduled' && new Date(m.match_date) > new Date()
+  ).length
+  const finishedR32 = r32Matches.filter(m => m.status === 'finished').length
+  const footerStatus = editableCount > 0
+    ? `${editableCount} cruce${editableCount !== 1 ? 's' : ''} aún sin iniciar — guarda tu bracket`
+    : finishedR32 === r32Matches.length && r32Matches.length > 0
+    ? 'Todos los cruces de 1/16 completados'
+    : finishedR32 > 0
+    ? `${finishedR32} de ${r32Matches.length} cruces de 1/16 completados`
+    : 'El bracket está en progreso'
 
   return (
     <div className="space-y-6 pb-24">
@@ -400,6 +432,21 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
             ))}
           </svg>
 
+          {/* Official score badges to the left of finished R32 cards */}
+          {nodes
+            .filter(({ match }) => match.phase === 'r32' && match.status === 'finished' && match.home_score != null)
+            .map(({ match, x, y }) => (
+              <div
+                key={`score-${match.id}`}
+                className="absolute flex items-center justify-center"
+                style={{ left: x - GX, top: y + LABEL_H, width: GX, height: CH }}
+              >
+                <span className="text-[9px] font-bold text-white/50 whitespace-nowrap">
+                  {match.home_score}–{match.away_score}
+                </span>
+              </div>
+            ))}
+
           {/* Match cards */}
           {nodes.map(({ match, x, y, isFinal }) => (
             <div
@@ -435,9 +482,7 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
                 {result.message}
               </div>
             ) : (
-              <p className="text-xs text-gray-500">
-                Guarda tu bracket antes de que inicien los partidos eliminatorios.
-              </p>
+              <p className="text-xs text-gray-500">{footerStatus}</p>
             )}
           </div>
           <button
