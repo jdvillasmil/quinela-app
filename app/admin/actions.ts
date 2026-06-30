@@ -93,3 +93,34 @@ export async function updateMatchResult(
 
   return { success: true, message: 'Partido finalizado y puntos recalculados.' }
 }
+
+export async function setKnockoutWinner(matchId: number, winner: string) {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, message: 'No autorizado' }
+
+  const { data: profile } = await (supabase as any)
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin') return { success: false, message: 'Acceso denegado' }
+
+  if (!winner.trim()) return { success: false, message: 'Ganador inválido' }
+
+  const { error } = await (supabase as any)
+    .from('matches')
+    .update({ knockout_winner: winner })
+    .eq('id', matchId)
+
+  if (error) {
+    console.error('Error guardando knockout_winner:', error)
+    return { success: false, message: 'Error al guardar el ganador' }
+  }
+
+  revalidatePath('/admin/matches')
+  revalidatePath('/bracket')
+  return { success: true, message: 'Ganador actualizado.' }
+}

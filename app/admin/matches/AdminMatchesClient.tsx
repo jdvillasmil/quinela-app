@@ -1,17 +1,46 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { CheckCircle, AlertCircle } from 'lucide-react'
 import type { Match } from '@/types'
-import { updateMatchResult } from '../actions'
+import { updateMatchResult, setKnockoutWinner } from '../actions'
 import { teamEs } from '@/lib/i18n/teams'
+
+// Recursively resolve 'W{n}' / 'L{n}' team references to actual names
+function resolveAdminTeam(teamStr: string, byNumber: Record<number, Match>): string {
+  if (!teamStr.startsWith('W') && !teamStr.startsWith('L')) return teamStr
+  const n = parseInt(teamStr.slice(1), 10)
+  const m = byNumber[n]
+  if (!m || m.status !== 'finished' || m.home_score == null || m.away_score == null) return teamStr
+  if (teamStr.startsWith('W')) {
+    if (m.home_score > m.away_score) return resolveAdminTeam(m.home_team, byNumber)
+    if (m.away_score > m.home_score) return resolveAdminTeam(m.away_team, byNumber)
+    return m.knockout_winner ? resolveAdminTeam(m.knockout_winner, byNumber) : teamStr
+  }
+  // L-prefix (loser)
+  if (m.home_score > m.away_score) return resolveAdminTeam(m.away_team, byNumber)
+  if (m.away_score > m.home_score) return resolveAdminTeam(m.home_team, byNumber)
+  return teamStr
+}
 
 export default function AdminMatchesClient({ initialMatches }: { initialMatches: Match[] }) {
   const [matches, setMatches] = useState<Match[]>(initialMatches)
   const [pending, setPending] = useState<{ matchId: number; action: 'live' | 'finished' } | null>(null)
+  const [pendingWinner, setPendingWinner] = useState<number | null>(null)
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
-
   const [editStates, setEditStates] = useState<Record<number, { home: string, away: string }>>({})
+  const [knockoutWinners, setKnockoutWinners] = useState<Record<number, string>>(() => {
+    const map: Record<number, string> = {}
+    for (const m of initialMatches) {
+      if (m.knockout_winner) map[m.id] = m.knockout_winner
+    }
+    return map
+  })
+
+  const matchesByNumber = useMemo(
+    () => Object.fromEntries(matches.map(m => [m.match_number, m])) as Record<number, Match>,
+    [matches]
+  )
 
   const handleScoreChange = (matchId: number, side: 'home' | 'away', value: string) => {
     setEditStates(prev => ({
@@ -24,7 +53,6 @@ export default function AdminMatchesClient({ initialMatches }: { initialMatches:
     }))
   }
 
-  // Effective score for a side: typed value, else stored value, else null
   const resolveScore = (m: Match, side: 'home' | 'away'): number | null => {
     const typed = editStates[m.id]?.[side]
     if (typed !== undefined && typed !== '') {
@@ -35,8 +63,6 @@ export default function AdminMatchesClient({ initialMatches }: { initialMatches:
   }
 
   const handleSave = async (m: Match, status: 'live' | 'finished') => {
-    // A live match starts at 0-0 if no score has been entered yet;
-    // finishing always requires an explicit score.
     const home = resolveScore(m, 'home') ?? (status === 'live' ? 0 : null)
     const away = resolveScore(m, 'away') ?? (status === 'live' ? 0 : null)
     if (home === null || away === null) return
@@ -49,6 +75,18 @@ export default function AdminMatchesClient({ initialMatches }: { initialMatches:
       setMatches(prev => prev.map(x =>
         x.id === m.id ? { ...x, home_score: home, away_score: away, status } : x
       ))
+    }
+    setTimeout(() => setResult(null), 3000)
+  }
+
+  const handleSetWinner = async (m: Match, winner: string) => {
+    setPendingWinner(m.id)
+    const res = await setKnockoutWinner(m.id, winner)
+    setPendingWinner(null)
+    setResult(res)
+    if (res.success) {
+      setKnockoutWinners(prev => ({ ...prev, [m.id]: winner }))
+      setMatches(prev => prev.map(x => x.id === m.id ? { ...x, knockout_winner: winner } : x))
     }
     setTimeout(() => setResult(null), 3000)
   }
@@ -82,6 +120,15 @@ export default function AdminMatchesClient({ initialMatches }: { initialMatches:
                 const isRowPending = pending?.matchId === m.id
                 const anyPending = pending !== null
                 const hasScore = resolveScore(m, 'home') !== null && resolveScore(m, 'away') !== null
+
+                const isKnockout = m.phase !== 'groups'
+                const isDraw = m.status === 'finished' &&
+                  m.home_score !== null && m.away_score !== null &&
+                  m.home_score === m.away_score
+                const needsWinner = isKnockout && isDraw
+
+                const currentWinner = knockoutWinners[m.id] ?? null
+
                 return (
                   <tr key={m.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-gray-500">{m.match_number}</td>
@@ -122,27 +169,55 @@ export default function AdminMatchesClient({ initialMatches }: { initialMatches:
                        )}
                     </td>
                     <td className="px-4 py-3 text-center">
-                       <div className="inline-flex items-center gap-2">
-                         {m.status !== 'finished' && (
+                       <div className="inline-flex flex-col items-center gap-2">
+                         <div className="inline-flex items-center gap-2">
+                           {m.status !== 'finished' && (
+                             <button
+                               onClick={() => handleSave(m, 'live')}
+                               disabled={anyPending}
+                               className="px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded hover:bg-red-700 disabled:opacity-50 transition-colors shadow-sm"
+                             >
+                               {isRowPending && pending.action === 'live'
+                                 ? 'Guardando...'
+                                 : m.status === 'live' ? 'Actualizar marcador' : '● En Vivo'}
+                             </button>
+                           )}
                            <button
-                             onClick={() => handleSave(m, 'live')}
-                             disabled={anyPending}
-                             className="px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded hover:bg-red-700 disabled:opacity-50 transition-colors shadow-sm"
+                             onClick={() => handleSave(m, 'finished')}
+                             disabled={anyPending || !hasScore}
+                             className="px-3 py-1.5 bg-navy text-white text-xs font-semibold rounded hover:bg-navy/90 disabled:opacity-50 transition-colors shadow-sm"
                            >
-                             {isRowPending && pending.action === 'live'
+                             {isRowPending && pending.action === 'finished'
                                ? 'Guardando...'
-                               : m.status === 'live' ? 'Actualizar marcador' : '● En Vivo'}
+                               : m.status === 'finished' ? 'Corregir final' : 'Finalizar'}
                            </button>
+                         </div>
+
+                         {needsWinner && (
+                           <div className="flex flex-col items-center gap-1">
+                             <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide">¿Quién avanzó?</span>
+                             <div className="flex gap-1">
+                               {([m.home_team, m.away_team] as const).map(raw => {
+                                 const display = teamEs(resolveAdminTeam(raw, matchesByNumber))
+                                 const isSelected = currentWinner === raw
+                                 return (
+                                   <button
+                                     key={raw}
+                                     onClick={() => handleSetWinner(m, raw)}
+                                     disabled={pendingWinner === m.id}
+                                     className={`px-2 py-1 text-[11px] font-semibold rounded border transition-colors disabled:opacity-50 ${
+                                       isSelected
+                                         ? 'bg-navy text-white border-navy'
+                                         : 'bg-white text-gray-700 border-gray-300 hover:border-navy hover:text-navy'
+                                     }`}
+                                   >
+                                     {pendingWinner === m.id ? '...' : display}
+                                   </button>
+                                 )
+                               })}
+                             </div>
+                           </div>
                          )}
-                         <button
-                           onClick={() => handleSave(m, 'finished')}
-                           disabled={anyPending || !hasScore}
-                           className="px-3 py-1.5 bg-navy text-white text-xs font-semibold rounded hover:bg-navy/90 disabled:opacity-50 transition-colors shadow-sm"
-                         >
-                           {isRowPending && pending.action === 'finished'
-                             ? 'Guardando...'
-                             : m.status === 'finished' ? 'Corregir final' : 'Finalizar'}
-                         </button>
                        </div>
                     </td>
                   </tr>

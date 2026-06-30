@@ -29,6 +29,7 @@ export interface Match {
   away_score: number | null
   status: MatchStatus
   api_match_id: string | null
+  knockout_winner: string | null
 }
 
 export interface Prediction {

@@ -230,7 +230,9 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
         if (m.status === 'finished' && m.home_score != null && m.away_score != null) {
           if (m.home_score > m.away_score) return resolveTeam(m.home_team)
           if (m.away_score > m.home_score) return resolveTeam(m.away_team)
-          return 'TBD' // draw (went to penalties — db stores regulation score)
+          // Draw (penalties) — use admin-set knockout_winner for propagation
+          if (m.knockout_winner) return resolveTeam(m.knockout_winner)
+          return 'TBD'
         }
         // Fall back to user's predicted score for visual bracket feedback
         const s = scores[m.id]
@@ -250,6 +252,13 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
         if (m.status === 'finished' && m.home_score != null && m.away_score != null) {
           if (m.home_score > m.away_score) return resolveTeam(m.away_team)
           if (m.away_score > m.home_score) return resolveTeam(m.home_team)
+          // Draw (penalties) — loser is whoever isn't the knockout_winner
+          if (m.knockout_winner) {
+            const winner = resolveTeam(m.knockout_winner)
+            const h = resolveTeam(m.home_team)
+            const a = resolveTeam(m.away_team)
+            return h === winner ? a : h
+          }
           return 'TBD'
         }
         const s = scores[m.id]
