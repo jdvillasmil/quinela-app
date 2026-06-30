@@ -294,6 +294,7 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
 
     startTransition(async () => {
       const res = await saveBracketPredictions(payload)
+      if (!res.success) console.error('[bracket] saveBracketPredictions failed:', res)
       setResult(res)
     })
   }
