@@ -215,7 +215,7 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
     return map
   })
   const [isPending, startTransition] = useTransition()
-  const [result, setResult] = useState<{ success: boolean; message: string; debugError?: { message: string; code: string; details: string; hint: string } } | null>(null)
+  const [result, setResult] = useState<{ success: boolean; message: string; saved?: number; skipped?: number } | null>(null)
 
   // Regular function (not useCallback) so recursive calls always read the
   // current render's scores/initialMatches without any stale-closure risk.
@@ -486,19 +486,21 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
       <div className="fixed bottom-[80px] sm:bottom-0 left-0 right-0 bg-[#071729] border-t border-[#1E3A6E]/60 p-4 shadow-lg z-40">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex-1">
-            {result ? (
-              <div className={`flex items-center gap-2 text-sm font-medium ${result.success ? 'text-emerald-400' : 'text-red-400'}`}>
-                {result.success ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                {result.message}
-                {result.debugError && (
-                  <span className="ml-2 font-mono text-xs opacity-75">
-                    [{result.debugError.code}] {result.debugError.message}
-                    {result.debugError.details ? ` · ${result.debugError.details}` : ''}
-                    {result.debugError.hint ? ` · hint: ${result.debugError.hint}` : ''}
-                  </span>
-                )}
-              </div>
-            ) : (
+            {result ? (() => {
+              const isPartial = result.success && (result.skipped ?? 0) > 0
+              const colorClass = !result.success
+                ? 'text-red-400'
+                : isPartial
+                ? 'text-amber-400'
+                : 'text-emerald-400'
+              const Icon = result.success && !isPartial ? CheckCircle : AlertCircle
+              return (
+                <div className={`flex items-center gap-2 text-sm font-medium ${colorClass}`}>
+                  <Icon className="w-4 h-4 shrink-0" />
+                  {result.message}
+                </div>
+              )
+            })() : (
               <p className="text-xs text-gray-500">{footerStatus}</p>
             )}
           </div>
