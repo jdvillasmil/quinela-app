@@ -1,9 +1,7 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
-import { Loader2, Save, CheckCircle, AlertCircle } from 'lucide-react'
+import { useState, useMemo } from 'react'
 import type { Match, BracketPrediction } from '@/types'
-import { saveBracketPredictions } from './actions'
 import { teamEs } from '@/lib/i18n/teams'
 
 // ── Layout constants ──────────────────────────────────────────────────────────
@@ -214,9 +212,6 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
     }
     return map
   })
-  const [isPending, startTransition] = useTransition()
-  const [result, setResult] = useState<{ success: boolean; message: string; saved?: number; skipped?: number } | null>(null)
-
   // Regular function (not useCallback) so recursive calls always read the
   // current render's scores/initialMatches without any stale-closure risk.
   function resolveTeam(teamStr: string): string {
@@ -274,31 +269,6 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
     return teamStr
   }
 
-  const handleScoreChange = (matchId: number, side: 'home' | 'away', value: string) => {
-    const num = value === '' ? '' : Math.max(0, parseInt(value, 10) || 0)
-    setScores(prev => ({
-      ...prev,
-      [matchId]: { ...(prev[matchId] ?? { home: '', away: '' }), [side]: num },
-    }))
-    setResult(null)
-  }
-
-  const handleSave = () => {
-    const payload = initialMatches
-      .map(m => {
-        const s = scores[m.id]
-        if (!s || s.home === '' || s.away === '') return null
-        return { match_id: m.id, predicted_home: s.home as number, predicted_away: s.away as number }
-      })
-      .filter(Boolean) as { match_id: number; predicted_home: number; predicted_away: number }[]
-
-    startTransition(async () => {
-      const res = await saveBracketPredictions(payload)
-      if (!res.success) console.error('[bracket] saveBracketPredictions failed:', res)
-      setResult(res)
-    })
-  }
-
   const { nodes, edges, svgW, svgH, third } = useMemo(
     () => computeLayout(initialMatches),
     [initialMatches]
@@ -311,9 +281,6 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
     const s = scores[match.id] ?? { home: '', away: '' }
 
     const isR32 = match.phase === 'r32'
-    const isEditable = isR32 &&
-      match.status === 'scheduled' &&
-      new Date(match.match_date) > new Date()
     const hasPred = s.home !== '' && s.away !== ''
 
     let borderClass: string
@@ -360,8 +327,9 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
             min={0}
             max={99}
             value={s.home}
-            disabled={!isEditable}
-            onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
+            disabled
+            readOnly
+            onChange={() => {}}
             className={inputCls}
           />
         </div>
@@ -372,8 +340,9 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
             min={0}
             max={99}
             value={s.away}
-            disabled={!isEditable}
-            onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
+            disabled
+            readOnly
+            onChange={() => {}}
             className={inputCls}
           />
         </div>
@@ -383,26 +352,13 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
 
   const canvasH = svgH + LABEL_H
 
-  const r32Matches = initialMatches.filter(m => m.phase === 'r32')
-  const editableCount = r32Matches.filter(m =>
-    m.status === 'scheduled' && new Date(m.match_date) > new Date()
-  ).length
-  const finishedR32 = r32Matches.filter(m => m.status === 'finished').length
-  const footerStatus = editableCount > 0
-    ? `${editableCount} cruce${editableCount !== 1 ? 's' : ''} aún sin iniciar — guarda tu bracket`
-    : finishedR32 === r32Matches.length && r32Matches.length > 0
-    ? 'Todos los cruces de 1/16 completados'
-    : finishedR32 > 0
-    ? `${finishedR32} de ${r32Matches.length} cruces de 1/16 completados`
-    : 'El bracket está en progreso'
-
   return (
     <div className="space-y-6 pb-24">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">Bracket Eliminatorio</h1>
         <p className="text-sm text-gray-400 mt-1">
-          Ingresa el marcador predicho para cada cruce. Los partidos se bloquean al iniciar.
+          Tus predicciones del bracket. Los resultados se actualizan conforme avanza el torneo.
         </p>
       </div>
 
@@ -482,38 +438,7 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
         </div>
       )}
 
-      {/* Save bar */}
-      <div className="fixed bottom-[80px] sm:bottom-0 left-0 right-0 bg-[#071729] border-t border-[#1E3A6E]/60 p-4 shadow-lg z-40">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex-1">
-            {result ? (() => {
-              const isPartial = result.success && (result.skipped ?? 0) > 0
-              const colorClass = !result.success
-                ? 'text-red-400'
-                : isPartial
-                ? 'text-amber-400'
-                : 'text-emerald-400'
-              const Icon = result.success && !isPartial ? CheckCircle : AlertCircle
-              return (
-                <div className={`flex items-center gap-2 text-sm font-medium ${colorClass}`}>
-                  <Icon className="w-4 h-4 shrink-0" />
-                  {result.message}
-                </div>
-              )
-            })() : (
-              <p className="text-xs text-gray-500">{footerStatus}</p>
-            )}
-          </div>
-          <button
-            onClick={handleSave}
-            disabled={isPending}
-            className="flex items-center justify-center gap-2 px-6 py-2.5 w-full sm:w-auto bg-skyblue text-navy text-sm font-bold rounded-lg hover:bg-skyblue/90 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
-          >
-            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {isPending ? 'Guardando...' : 'Guardar Bracket Completo'}
-          </button>
-        </div>
-      </div>
+      {/* Save bar hidden — R32 predictions are locked */}
     </div>
   )
 }
