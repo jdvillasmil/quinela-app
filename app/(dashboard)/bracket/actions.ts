@@ -35,7 +35,7 @@ export async function saveBracketPredictions(
     .select('id')
     .in('id', matchIds)
     .eq('status', 'scheduled')
-    .gt('match_date', new Date().toISOString())
+    .gt('match_date', new Date().toISOString()) as { data: { id: number }[] | null; error: unknown }
 
   if (fetchError) {
     console.error('Error fetching matches for bracket save:', fetchError)
