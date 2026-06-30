@@ -322,8 +322,8 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
       borderClass = 'border-[#1E3A6E]'
     }
 
-    const rowBase = 'flex items-center justify-center flex-1 px-1 gap-1.5'
-    const teamLabel = `max-w-[80px] truncate text-[10px] font-medium ${isR32 ? 'text-gray-300' : 'text-gray-500 italic'}`
+    const rowBase = 'flex items-center flex-1 px-1.5 gap-1'
+    const teamLabel = `w-[84px] min-w-0 truncate text-[10px] font-medium ${isR32 ? 'text-gray-300' : 'text-gray-500 italic'}`
 
     if (!isR32) {
       return (
@@ -473,7 +473,7 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
       )}
 
       {/* Save bar */}
-      <div className="fixed bottom-[80px] sm:bottom-0 left-0 right-0 sm:left-64 bg-[#071729] border-t border-[#1E3A6E]/60 p-4 shadow-lg z-40">
+      <div className="fixed bottom-[80px] sm:bottom-0 left-0 right-0 bg-[#071729] border-t border-[#1E3A6E]/60 p-4 shadow-lg z-40">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex-1">
             {result ? (
