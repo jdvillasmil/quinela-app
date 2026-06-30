@@ -215,7 +215,7 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
     return map
   })
   const [isPending, startTransition] = useTransition()
-  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [result, setResult] = useState<{ success: boolean; message: string; debugError?: { message: string; code: string; details: string; hint: string } } | null>(null)
 
   // Regular function (not useCallback) so recursive calls always read the
   // current render's scores/initialMatches without any stale-closure risk.
@@ -490,6 +490,13 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
               <div className={`flex items-center gap-2 text-sm font-medium ${result.success ? 'text-emerald-400' : 'text-red-400'}`}>
                 {result.success ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
                 {result.message}
+                {result.debugError && (
+                  <span className="ml-2 font-mono text-xs opacity-75">
+                    [{result.debugError.code}] {result.debugError.message}
+                    {result.debugError.details ? ` · ${result.debugError.details}` : ''}
+                    {result.debugError.hint ? ` · hint: ${result.debugError.hint}` : ''}
+                  </span>
+                )}
               </div>
             ) : (
               <p className="text-xs text-gray-500">{footerStatus}</p>

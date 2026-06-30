@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 export interface SaveResult {
   success: boolean
   message: string
+  debugError?: { message: string; code: string; details: string; hint: string }
 }
 
 export async function saveBracketPredictions(
@@ -39,7 +40,16 @@ export async function saveBracketPredictions(
 
   if (error) {
     console.error('Error saving bracket predictions:', error)
-    return { success: false, message: 'Error al guardar el bracket.' }
+    return {
+      success: false,
+      message: 'Error al guardar el bracket.',
+      debugError: {
+        message: error.message ?? '',
+        code: error.code ?? '',
+        details: error.details ?? '',
+        hint: error.hint ?? '',
+      },
+    }
   }
 
   revalidatePath('/bracket')
