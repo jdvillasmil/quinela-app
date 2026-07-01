@@ -8,12 +8,13 @@ import { teamEs } from '@/lib/i18n/teams'
 // 9-column butterfly: [L-r32][L-r16][L-qf][L-sf][FINAL][R-sf][R-qf][R-r16][R-r32]
 const CW = 128    // card width
 const CH = 60     // card height
-const STATS_H = 56 // prediction-stats strip height under each R32 card
-const SH = 136    // vertical slot per r32 match (card + stats + gaps)
+const SH = 80     // vertical slot per r32 match
 const GX = 36     // horizontal gap between columns (connector zone)
 const CS = CW + GX // column step = 164
 const PAD = 50    // canvas padding (extra left space for score badges)
 const LABEL_H = 24
+const THIRD_GAP = 32     // vertical gap between the final card and the third-place card
+const THIRD_LABEL_H = 16 // height of the floating "Tercer Puesto" label above that card
 
 const COL_LABELS = ['1/16','Octavos','Cuartos','Semis','Final','Semis','Cuartos','Octavos','1/16']
 const colX = (col: number) => PAD + col * CS
@@ -26,6 +27,7 @@ interface Layout {
   svgW: number
   svgH: number
   third: Match | null
+  thirdPos: { x: number; y: number } | null
 }
 
 type ScorePair = { home: number | ''; away: number | '' }
@@ -229,10 +231,19 @@ function computeLayout(matches: Match[]): Layout {
   rightEdges(rightR16, 7)
 
   const r32Cnt = leftR32.length
-  const svgH   = r32Cnt > 0 ? PAD * 2 + (r32Cnt - 1) * SH + CH : CH + PAD * 2
+  const baseSvgH = r32Cnt > 0 ? PAD * 2 + (r32Cnt - 1) * SH + CH : CH + PAD * 2
   const svgW   = PAD * 2 + 9 * CW + 8 * GX
 
-  return { nodes, edges, svgW, svgH, third }
+  let thirdPos: { x: number; y: number } | null = null
+  let svgH = baseSvgH
+  if (third && finalMatch) {
+    const finalY = PAD + (yOf[finalMatch.id] ?? 0)
+    const thirdY = finalY + CH + THIRD_GAP
+    thirdPos = { x: colX(4), y: thirdY }
+    svgH = Math.max(baseSvgH, thirdY + CH + PAD)
+  }
+
+  return { nodes, edges, svgW, svgH, third, thirdPos }
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -310,7 +321,7 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
     return teamStr
   }
 
-  const { nodes, edges, svgW, svgH, third } = useMemo(
+  const { nodes, edges, svgW, svgH, third, thirdPos } = useMemo(
     () => computeLayout(initialMatches),
     [initialMatches]
   )
@@ -465,29 +476,58 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
             </div>
           ))}
 
-          {/* Prediction stats strip under each R32 card */}
-          {nodes
-            .filter(({ match }) => match.phase === 'r32' && matchPredictionStats[match.id])
-            .map(({ match, x, y }) => (
-              <div
-                key={`stats-${match.id}`}
-                className="absolute rounded-lg border border-[#1E3A6E]/60 bg-[#071729]/60"
-                style={{ left: x, top: y + LABEL_H + CH + 6, width: CW, height: STATS_H }}
+          {/* Third place — anchored below the final, same column */}
+          {third && thirdPos && (
+            <>
+              <p
+                className="absolute text-[9px] font-bold text-gray-400 uppercase tracking-wider text-center"
+                style={{ left: thirdPos.x, top: thirdPos.y - THIRD_LABEL_H - 4 + LABEL_H, width: CW, height: THIRD_LABEL_H }}
               >
-                <BracketPredictionStatsView data={matchPredictionStats[match.id]} />
+                Tercer Puesto
+              </p>
+              <div
+                className="absolute"
+                style={{ left: thirdPos.x, top: thirdPos.y + LABEL_H, width: CW, height: CH }}
+              >
+                {renderCard(third)}
               </div>
-            ))}
+            </>
+          )}
         </div>
       </div>
 
-      {/* Third place */}
-      {third && (
+      {/* Prediction stats — one card per R32 match, laid out at page level (not tied to canvas geometry) */}
+      {nodes.some(({ match }) => match.phase === 'r32' && matchPredictionStats[match.id]) && (
         <div>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-            Tercer Puesto
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+            Predicciones de la Comunidad — 1/16 de Final
           </p>
-          <div style={{ width: CW, height: CH }}>
-            {renderCard(third)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {nodes
+              .filter(({ match }) => match.phase === 'r32' && matchPredictionStats[match.id])
+              .map(({ match }) => {
+                const home = resolveTeam(match.home_team)
+                const away = resolveTeam(match.away_team)
+                return (
+                  <div
+                    key={`stats-card-${match.id}`}
+                    className="rounded-lg border border-[#1E3A6E]/60 bg-[#071729]/60 p-3"
+                  >
+                    <div className="flex items-center justify-between text-[11px] font-medium text-gray-300 mb-2 gap-1">
+                      <span className="flex items-center gap-1 min-w-0 truncate">
+                        <span>{match.home_flag}</span>
+                        <span className="truncate">{teamEs(home)}</span>
+                      </span>
+                      <span className="text-gray-500 shrink-0">vs</span>
+                      <span className="flex items-center gap-1 min-w-0 truncate flex-row-reverse text-right">
+                        <span>{match.away_flag}</span>
+                        <span className="truncate">{teamEs(away)}</span>
+                      </span>
+                    </div>
+                    <BracketPredictionStatsView data={matchPredictionStats[match.id]} />
+                  </div>
+                )
+              })}
           </div>
         </div>
       )}
