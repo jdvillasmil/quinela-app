@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Trophy, Target, ChevronRight, Star, CalendarDays, ChevronDown, LayoutGrid } from 'lucide-react'
+import { Trophy, Target, ChevronRight, Star, ChevronDown, LayoutGrid, Swords } from 'lucide-react'
 import type { LeaderboardEntry } from '@/types'
-import type { NextMatch, LiveMatch, GroupStanding } from './page'
+import type { R32Match, GroupStanding } from './page'
 import { teamEs } from '@/lib/i18n/teams'
 import TeamFlag from '@/components/ui/TeamFlag'
 
@@ -14,8 +14,10 @@ interface Props {
   entry: LeaderboardEntry | null
   totalUsers: number
   predictionsCount: number
-  nextMatches: NextMatch[]
-  liveMatches: LiveMatch[]
+  r32Matches: R32Match[]
+  bracketPoints: number
+  bracketCorrect: number
+  bracketDecided: number
   groupStandings: GroupStanding[]
 }
 
@@ -35,45 +37,103 @@ function formatMatchDate(dateStr: string): { day: string; time: string } {
   return { day, time }
 }
 
-const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z') // 15:00 Bogotá (UTC-4)
 const GROUP_MATCHES = 72
 
-interface TimeLeft {
-  days: number
-  hours: number
-  minutes: number
-  seconds: number
-  started: boolean
-}
+// ─── R32 Hoy/Mañana ─────────────────────────────────────────────────────────
 
-function getTimeLeft(target: Date): TimeLeft {
-  const diff = Math.max(0, target.getTime() - Date.now())
-  return {
-    days: Math.floor(diff / 86400000),
-    hours: Math.floor((diff % 86400000) / 3600000),
-    minutes: Math.floor((diff % 3600000) / 60000),
-    seconds: Math.floor((diff % 60000) / 1000),
-    started: diff <= 0,
+function R32StatusBadge({ status, homeScore, awayScore }: { status: R32Match['status']; homeScore: number | null; awayScore: number | null }) {
+  if (status === 'live') {
+    return (
+      <span className="inline-flex items-center gap-1.5 flex-shrink-0 text-[10px] font-semibold text-red-400 bg-red-500/10 border border-red-500/20 rounded-md px-2 py-0.5 uppercase tracking-wide">
+        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+        En vivo {homeScore ?? 0}-{awayScore ?? 0}
+      </span>
+    )
   }
+  if (status === 'finished') {
+    return (
+      <span className="flex-shrink-0 text-[10px] font-semibold text-gray-400 bg-white/5 border border-white/10 rounded-md px-2 py-0.5 uppercase tracking-wide">
+        Finalizado {homeScore ?? 0}-{awayScore ?? 0}
+      </span>
+    )
+  }
+  return (
+    <span className="flex-shrink-0 text-[10px] font-semibold text-skyblue/60 bg-skyblue/8 border border-skyblue/15 rounded-md px-2 py-0.5 uppercase tracking-wide">
+      Programado
+    </span>
+  )
 }
 
-function TimeUnit({ value, label }: { value: number; label: string }) {
+function R32Block({ matches }: { matches: R32Match[] }) {
+  if (matches.length === 0) return null
+
   return (
-    <div className="flex flex-col items-center">
-      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-black/20 border border-white/15 rounded-xl flex items-center justify-center shadow-inner">
-        <span className="text-2xl sm:text-3xl font-bold text-white tabular-nums">
-          {String(value).padStart(2, '0')}
+    <div className="bg-[#071729] rounded-2xl border border-[#1E3A6E]/50 shadow-lg overflow-hidden">
+      <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/6">
+        <Swords className="w-4 h-4 text-skyblue" />
+        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+          Dieciseisavos · Hoy y mañana
         </span>
       </div>
-      <span className="text-skyblue/70 text-[10px] font-semibold mt-2 uppercase tracking-widest">
-        {label}
-      </span>
+      <ul className="divide-y divide-white/5">
+        {matches.map((match) => {
+          const { time } = formatMatchDate(match.match_date)
+          return (
+            <li key={match.id} className="flex items-center gap-4 px-5 py-3.5">
+              <div className="w-16 flex-shrink-0">
+                <p className="text-[11px] text-skyblue font-semibold">{match.day_label}</p>
+                <p className="text-[11px] text-gray-500 tabular-nums mt-0.5">{time} <span className="text-gray-600">UTC-4</span></p>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 text-sm font-medium text-white">
+                  <TeamFlag team={match.home_team} size="sm" className="rounded-sm" />
+                  <span className="truncate">{teamEs(match.home_team)}</span>
+                  <span className="text-gray-600 text-xs font-normal flex-shrink-0">vs</span>
+                  <TeamFlag team={match.away_team} size="sm" className="rounded-sm" />
+                  <span className="truncate">{teamEs(match.away_team)}</span>
+                </div>
+                {match.venue && (
+                  <p className="text-[11px] text-gray-600 mt-0.5 truncate">
+                    {match.venue === 'TBD' ? 'Sede por confirmar' : match.venue}
+                  </p>
+                )}
+              </div>
+              <R32StatusBadge status={match.status} homeScore={match.home_score} awayScore={match.away_score} />
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }
 
-function TimeSeparator() {
-  return <span className="text-white/25 text-2xl font-light self-start mt-5">:</span>
+// ─── Bracket CTA ────────────────────────────────────────────────────────────
+
+function BracketSummaryCard({ points, correct, decided }: { points: number; correct: number; decided: number }) {
+  return (
+    <Link
+      href="/bracket"
+      className="group flex items-center justify-between w-full bg-navy hover:bg-[#001a4d] border border-[#1E3A6E]/60 hover:border-skyblue/40 transition-all duration-200 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl hover:shadow-skyblue/5 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+    >
+      <div>
+        <p className="text-skyblue text-xs font-semibold uppercase tracking-widest mb-1.5">
+          Fase eliminatoria
+        </p>
+        <p className="text-xl sm:text-2xl font-bold leading-tight">Tu bracket</p>
+        <div className="flex items-end gap-6 mt-3">
+          <div>
+            <p className="text-3xl font-bold tabular-nums">{points}</p>
+            <p className="text-white/35 text-xs mt-0.5">puntos</p>
+          </div>
+          <div>
+            <p className="text-3xl font-bold tabular-nums">{correct}/{decided}</p>
+            <p className="text-white/35 text-xs mt-0.5">aciertos</p>
+          </div>
+        </div>
+      </div>
+      <ChevronRight className="w-8 h-8 text-skyblue/50 group-hover:text-skyblue group-hover:translate-x-1.5 transition-all flex-shrink-0 ml-4" />
+    </Link>
+  )
 }
 
 // ─── Mis Grupos ───────────────────────────────────────────────────────────────
@@ -192,25 +252,18 @@ function MisGrupos({ groupStandings }: { groupStandings: GroupStanding[] }) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export default function DashboardClient({ firstName, entry, totalUsers, predictionsCount, nextMatches, liveMatches, groupStandings }: Props) {
-  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null)
+export default function DashboardClient({ firstName, entry, totalUsers, predictionsCount, r32Matches, bracketPoints, bracketCorrect, bracketDecided, groupStandings }: Props) {
   const [rulesOpen, setRulesOpen] = useState(false)
   const router = useRouter()
 
-  useEffect(() => {
-    const update = () => setTimeLeft(getTimeLeft(TOURNAMENT_START))
-    update()
-    const id = setInterval(update, 1000)
-    return () => clearInterval(id)
-  }, [])
-
-  // While a match is live, re-fetch server data so the score the admin
+  // While a R32 match is live, re-fetch server data so the score the admin
   // saves shows up without a manual reload
+  const hasLiveR32 = r32Matches.some((m) => m.status === 'live')
   useEffect(() => {
-    if (liveMatches.length === 0) return
+    if (!hasLiveR32) return
     const id = setInterval(() => router.refresh(), 60000)
     return () => clearInterval(id)
-  }, [liveMatches.length, router])
+  }, [hasLiveR32, router])
 
   const progress = Math.round((predictionsCount / GROUP_MATCHES) * 100)
   const points = entry?.total_points ?? 0
@@ -230,214 +283,11 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
         </p>
       </div>
 
-      {/* Countdown — two-column card */}
-      <div className="relative bg-navy rounded-2xl overflow-hidden shadow-lg shadow-black/30 border border-[#1E3A6E]/60">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-12 -right-12 w-52 h-52 rounded-full bg-skyblue/6" />
-          <div className="absolute -bottom-12 -left-12 w-60 h-60 rounded-full bg-skyblue/4" />
-        </div>
+      {/* Bracket CTA */}
+      <BracketSummaryCard points={bracketPoints} correct={bracketCorrect} decided={bracketDecided} />
 
-        <div className="relative flex flex-col sm:flex-row">
-          {/* Left: timer */}
-          <div className="flex-1 p-6 sm:p-8">
-            <p className="text-skyblue text-xs font-semibold uppercase tracking-widest mb-0.5">
-              {timeLeft?.started ? 'El torneo está en curso' : 'El torneo comienza en'}
-            </p>
-            <p className="text-white/35 text-xs mb-6">
-              11 jun 2026 · 15:00 h (UTC-4)
-            </p>
-
-            {timeLeft === null ? (
-              <div className="flex gap-3 sm:gap-4">
-                {['--', '--', '--', '--'].map((v, i) => (
-                  <div key={i} className="flex flex-col items-center">
-                    <div className="w-16 h-16 sm:w-[4.25rem] sm:h-[4.25rem] bg-black/20 border border-white/10 rounded-xl flex items-center justify-center">
-                      <span className="text-2xl font-bold text-white/20 tabular-nums">{v}</span>
-                    </div>
-                    <span className="text-white/10 text-[10px] font-semibold mt-2 uppercase tracking-widest">···</span>
-                  </div>
-                ))}
-              </div>
-            ) : timeLeft.started ? (
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
-                <p className="text-2xl font-bold text-white">¡El Mundial está en curso!</p>
-              </div>
-            ) : (
-              <div className="flex items-start gap-2 sm:gap-3">
-                <TimeUnit value={timeLeft.days} label="Días" />
-                <TimeSeparator />
-                <TimeUnit value={timeLeft.hours} label="Horas" />
-                <TimeSeparator />
-                <TimeUnit value={timeLeft.minutes} label="Min" />
-                <TimeSeparator />
-                <TimeUnit value={timeLeft.seconds} label="Seg" />
-              </div>
-            )}
-          </div>
-
-          {/* Divider */}
-          {(liveMatches.length > 0 || nextMatches.length > 0) && (
-            <>
-              <div className="hidden sm:block w-px bg-white/8 my-6 flex-shrink-0" />
-              <div className="sm:hidden h-px bg-white/8 mx-6" />
-            </>
-          )}
-
-          {/* Right: partido en vivo (marcador actualizado por el admin) */}
-          {liveMatches.length > 0 && (() => {
-            const match = liveMatches[0]
-            return (
-              <div className="flex-1 p-6 sm:p-8 flex flex-col justify-center">
-                <p className="flex items-center gap-2 text-red-400 text-xs font-semibold uppercase tracking-widest mb-4">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  En vivo
-                </p>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center justify-between gap-2.5">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <TeamFlag team={match.home_team} size="md" className="rounded-sm" />
-                      <span className="text-sm font-semibold text-white truncate">{teamEs(match.home_team)}</span>
-                    </div>
-                    <span className="text-2xl font-bold text-white tabular-nums">{match.home_score ?? 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2.5">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <TeamFlag team={match.away_team} size="md" className="rounded-sm" />
-                      <span className="text-sm font-semibold text-white truncate">{teamEs(match.away_team)}</span>
-                    </div>
-                    <span className="text-2xl font-bold text-white tabular-nums">{match.away_score ?? 0}</span>
-                  </div>
-                </div>
-                {match.venue && (
-                  <p className="text-[11px] text-gray-600 truncate">{match.venue}</p>
-                )}
-                {match.group_name && (
-                  <span className="inline-block mt-3 text-[10px] font-semibold text-skyblue/60 bg-skyblue/8 border border-skyblue/15 rounded-md px-2 py-0.5 uppercase tracking-wide w-fit">
-                    Grupo {match.group_name}
-                  </span>
-                )}
-              </div>
-            )
-          })()}
-
-          {/* Right: próximo partido (cuando no hay partido en vivo) */}
-          {liveMatches.length === 0 && nextMatches.length > 0 && (() => {
-            const match = nextMatches[0]
-            const { day, time } = formatMatchDate(match.match_date)
-            return (
-              <div className="flex-1 p-6 sm:p-8 flex flex-col justify-center">
-                <p className="text-skyblue text-xs font-semibold uppercase tracking-widest mb-4">
-                  Próximo partido
-                </p>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2.5">
-                    <TeamFlag team={match.home_team} size="md" className="rounded-sm" />
-                    <span className="text-sm font-semibold text-white">{teamEs(match.home_team)}</span>
-                  </div>
-                  <span className="block text-xs text-gray-600 pl-0.5">vs</span>
-                  <div className="flex items-center gap-2.5">
-                    <TeamFlag team={match.away_team} size="md" className="rounded-sm" />
-                    <span className="text-sm font-semibold text-white">{teamEs(match.away_team)}</span>
-                  </div>
-                </div>
-                <p className="text-xs text-skyblue tabular-nums">
-                  {time} <span className="text-skyblue/50">UTC-4</span>
-                  <span className="text-gray-600"> · </span>
-                  <span className="text-gray-500 capitalize">{day}</span>
-                </p>
-                {match.venue && (
-                  <p className="text-[11px] text-gray-600 mt-1 truncate">{match.venue}</p>
-                )}
-                {match.group_name && (
-                  <span className="inline-block mt-3 text-[10px] font-semibold text-skyblue/60 bg-skyblue/8 border border-skyblue/15 rounded-md px-2 py-0.5 uppercase tracking-wide w-fit">
-                    Grupo {match.group_name}
-                  </span>
-                )}
-              </div>
-            )
-          })()}
-        </div>
-      </div>
-
-      {/* Otros partidos en vivo (cuando hay más de uno) */}
-      {liveMatches.length > 1 && (
-        <div className="bg-[#071729] rounded-2xl border border-red-500/20 shadow-lg overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/6">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-[11px] font-semibold text-red-400 uppercase tracking-wider">
-              También en vivo
-            </span>
-          </div>
-          <ul className="divide-y divide-white/5">
-            {liveMatches.slice(1).map((match) => (
-              <li key={match.id} className="flex items-center gap-4 px-5 py-3.5">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 text-sm font-medium text-white">
-                    <TeamFlag team={match.home_team} size="sm" className="rounded-sm" />
-                    <span className="truncate">{teamEs(match.home_team)}</span>
-                    <span className="text-base font-bold tabular-nums flex-shrink-0">
-                      {match.home_score ?? 0} - {match.away_score ?? 0}
-                    </span>
-                    <TeamFlag team={match.away_team} size="sm" className="rounded-sm" />
-                    <span className="truncate">{teamEs(match.away_team)}</span>
-                  </div>
-                  {match.venue && (
-                    <p className="text-[11px] text-gray-600 mt-0.5 truncate">{match.venue}</p>
-                  )}
-                </div>
-                {match.group_name && (
-                  <span className="flex-shrink-0 text-[10px] font-semibold text-skyblue/60 bg-skyblue/8 border border-skyblue/15 rounded-md px-2 py-0.5 uppercase tracking-wide">
-                    Gr. {match.group_name}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Próximos partidos (los que no aparecen en la tarjeta principal) */}
-      {(liveMatches.length > 0 ? nextMatches.length > 0 : nextMatches.length > 1) && (
-        <div className="bg-[#071729] rounded-2xl border border-[#1E3A6E]/50 shadow-lg overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/6">
-            <CalendarDays className="w-4 h-4 text-skyblue" />
-            <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-              Próximos partidos
-            </span>
-          </div>
-          <ul className="divide-y divide-white/5">
-            {(liveMatches.length > 0 ? nextMatches : nextMatches.slice(1)).map((match) => {
-              const { day, time } = formatMatchDate(match.match_date)
-              return (
-                <li key={match.id} className="flex items-center gap-4 px-5 py-3.5">
-                  <div className="w-20 flex-shrink-0">
-                    <p className="text-[11px] text-skyblue font-semibold tabular-nums">{time} <span className="text-skyblue/50">UTC-4</span></p>
-                    <p className="text-[11px] text-gray-500 capitalize mt-0.5">{day}</p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 text-sm font-medium text-white">
-                      <TeamFlag team={match.home_team} size="sm" className="rounded-sm" />
-                      <span className="truncate">{teamEs(match.home_team)}</span>
-                      <span className="text-gray-600 text-xs font-normal flex-shrink-0">vs</span>
-                      <TeamFlag team={match.away_team} size="sm" className="rounded-sm" />
-                      <span className="truncate">{teamEs(match.away_team)}</span>
-                    </div>
-                    {match.venue && (
-                      <p className="text-[11px] text-gray-600 mt-0.5 truncate">{match.venue}</p>
-                    )}
-                  </div>
-                  {match.group_name && (
-                    <span className="flex-shrink-0 text-[10px] font-semibold text-skyblue/60 bg-skyblue/8 border border-skyblue/15 rounded-md px-2 py-0.5 uppercase tracking-wide">
-                      Gr. {match.group_name}
-                    </span>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-      )}
+      {/* R32 hoy/mañana */}
+      <R32Block matches={r32Matches} />
 
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -547,15 +397,15 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
       >
         <div>
           <p className="text-skyblue text-xs font-semibold uppercase tracking-widest mb-1.5">
-            {predictionsCount === GROUP_MATCHES ? '¡Predicciones completas!' : 'Fase de grupos · Cierre 11 jun'}
+            {predictionsCount === GROUP_MATCHES ? '¡Predicciones completas!' : 'Fase de grupos · Ventana cerrada'}
           </p>
           <p className="text-2xl sm:text-3xl font-bold leading-tight">
-            {predictionsCount === GROUP_MATCHES ? 'Revisa tus predicciones' : 'Haz tus predicciones'}
+            {predictionsCount === GROUP_MATCHES ? 'Revisa tus predicciones' : 'Revisa qué te perdiste'}
           </p>
           <p className="text-white/35 text-sm mt-2">
             {predictionsCount === GROUP_MATCHES
               ? 'Ya completaste los 72 partidos de grupos'
-              : `${remaining} partido${remaining !== 1 ? 's' : ''} sin predecir`}
+              : `Te quedaron ${remaining} partido${remaining !== 1 ? 's' : ''} sin predecir — la ventana ya cerró`}
           </p>
         </div>
         <ChevronRight className="w-8 h-8 text-skyblue/50 group-hover:text-skyblue group-hover:translate-x-1.5 transition-all flex-shrink-0 ml-4" />
