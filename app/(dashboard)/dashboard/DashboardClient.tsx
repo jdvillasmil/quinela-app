@@ -606,27 +606,21 @@ export default function DashboardClient({ firstName, entry, totalUsers, predicti
               <div>
                 <p className="text-[11px] font-semibold text-skyblue uppercase tracking-wider mb-2.5">Fase eliminatoria</p>
                 <div className="rounded-lg border border-white/6 overflow-hidden text-xs">
-                  <div className="grid grid-cols-3 bg-white/4 px-3 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                    <span>Ronda</span>
-                    <span className="text-center">Ganador</span>
-                    <span className="text-right">Exacto</span>
+                  <div className="grid grid-cols-2 bg-white/4 px-3 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                    <span>Criterio</span>
+                    <span className="text-right">Puntos</span>
                   </div>
                   {[
-                    ['1/16 (R32)', '+2 pts', '+4 pts'],
-                    ['Octavos (R16)', '+3 pts', '+6 pts'],
-                    ['Cuartos de final', '+4 pts', '+8 pts'],
-                    ['Semifinales', '+5 pts', '+10 pts'],
-                    ['Final — Campeón', '+15 pts', '—'],
-                    ['Final — Subcampeón', '+8 pts', '—'],
-                    ['3er puesto', '+5 pts', '—'],
-                  ].map(([round, winner, exact], i) => (
+                    ['Signo 1X2 correcto', '+1 pt'],
+                    ['Diferencia de goles exacta', '+1 pt'],
+                    ['Resultado exacto', '+3 pts'],
+                  ].map(([label, pts], i) => (
                     <div
-                      key={round}
-                      className={`grid grid-cols-3 px-3 py-2 ${i % 2 === 0 ? '' : 'bg-white/[0.02]'}`}
+                      key={label}
+                      className={`grid grid-cols-2 px-3 py-2 ${i % 2 === 0 ? '' : 'bg-white/[0.02]'}`}
                     >
-                      <span className="text-gray-400">{round}</span>
-                      <span className="text-center font-semibold text-white">{winner}</span>
-                      <span className="text-right font-semibold text-white">{exact}</span>
+                      <span className="text-gray-400">{label}</span>
+                      <span className="text-right font-semibold text-white">{pts}</span>
                     </div>
                   ))}
                 </div>
