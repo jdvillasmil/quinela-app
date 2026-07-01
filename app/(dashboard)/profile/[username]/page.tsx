@@ -2,8 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import type { LeaderboardEntry } from '@/types'
-import { Shield, Trophy, Target, Zap, TrendingUp, ArrowLeft, Calendar } from 'lucide-react'
+import { Shield, Trophy, Target, Zap, TrendingUp, TrendingDown, CheckCircle2, ArrowLeft, Calendar } from 'lucide-react'
 import Link from 'next/link'
+import TeamFlag from '@/components/ui/TeamFlag'
+import { teamEs } from '@/lib/i18n/teams'
 
 const GROUP_MATCHES = 72
 
@@ -64,6 +66,23 @@ export default async function PublicProfilePage({
   const leaderboard = ((rawLeaderboard ?? []) as LeaderboardEntry[])
   const entry = leaderboard.find(e => e.user_id === profile.id) ?? null
   const totalUsers = leaderboard.length
+
+  // SECURITY DEFINER RPC — safe to call for any profile being viewed
+  const { data: breakdownRaw } = await (supabase as any)
+    .rpc('get_user_profile_breakdown', { p_user_id: profile.id })
+
+  const breakdown = breakdownRaw as {
+    team_points: { team: string; points: number }[]
+    best_group: { group_name: string; points: number } | null
+    worst_group: { group_name: string; points: number } | null
+    accuracy: { predictions_made: number; predictions_correct: number; accuracy_pct: number }
+    comparison: { user_total: number; avg_total: number; diff: number }
+  } | null
+
+  const bestTeam = breakdown?.team_points?.[0] ?? null
+  const worstTeam = breakdown && breakdown.team_points.length > 1
+    ? breakdown.team_points[breakdown.team_points.length - 1]
+    : null
 
   const initials = `${profile.first_name?.[0] ?? ''}${profile.last_name?.[0] ?? ''}`.toUpperCase()
     || profile.username[0].toUpperCase()
@@ -189,6 +208,80 @@ export default async function PublicProfilePage({
           )}
         </div>
       </div>
+
+      {/* ── TEAM BREAKDOWN ── */}
+      {breakdown && (bestTeam || worstTeam) && (
+        <div className="grid grid-cols-2 gap-3">
+          {bestTeam && (
+            <div className="bg-[#071729] rounded-xl border border-[#1E3A6E]/50 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                  <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                </div>
+                <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Mejor equipo</span>
+              </div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <TeamFlag team={bestTeam.team} size="md" className="rounded-sm" />
+                <span className="text-sm font-semibold text-white truncate">{teamEs(bestTeam.team)}</span>
+              </div>
+              <p className="text-2xl font-bold text-emerald-400 tabular-nums">{bestTeam.points} pts</p>
+            </div>
+          )}
+          {worstTeam && (
+            <div className="bg-[#071729] rounded-xl border border-[#1E3A6E]/50 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-lg bg-gray-500/10 flex items-center justify-center flex-shrink-0">
+                  <TrendingDown className="w-3.5 h-3.5 text-gray-400" />
+                </div>
+                <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Menor rendimiento</span>
+              </div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <TeamFlag team={worstTeam.team} size="md" className="rounded-sm" />
+                <span className="text-sm font-semibold text-white truncate">{teamEs(worstTeam.team)}</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-300 tabular-nums">{worstTeam.points} pts</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── GROUP PERFORMANCE + ACCURACY ── */}
+      {breakdown && (
+        <div className="grid grid-cols-2 gap-3">
+          {breakdown.best_group && (
+            <StatCard
+              icon={<Trophy className="w-3.5 h-3.5 text-amber-400" />}
+              iconBg="bg-amber-500/10"
+              label="Mejor grupo"
+              value={`Grupo ${breakdown.best_group.group_name}`}
+              sub={`${breakdown.best_group.points} pts en ese grupo`}
+            />
+          )}
+          <StatCard
+            icon={<CheckCircle2 className="w-3.5 h-3.5 text-skyblue" />}
+            iconBg="bg-skyblue/10"
+            label="Precisión"
+            value={`${breakdown.accuracy.accuracy_pct}%`}
+            sub={`${breakdown.accuracy.predictions_correct} de ${breakdown.accuracy.predictions_made} aciertos`}
+          />
+        </div>
+      )}
+
+      {/* ── TOURNAMENT COMPARISON ── */}
+      {breakdown && (
+        <div className="bg-[#071729] rounded-xl border border-[#1E3A6E]/50 px-5 py-4">
+          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            Comparativa vs. promedio del torneo
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-white tabular-nums">{breakdown.comparison.user_total}</span>
+            <span className="text-sm text-gray-500">pts</span>
+            <span className={`text-sm font-semibold tabular-nums ${breakdown.comparison.diff >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {breakdown.comparison.diff >= 0 ? '+' : ''}{breakdown.comparison.diff} vs. promedio ({breakdown.comparison.avg_total})
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* ── MEMBER SINCE ── */}
       <div className="bg-[#071729] rounded-xl border border-[#1E3A6E]/50 px-5 py-4 flex items-center gap-3">
