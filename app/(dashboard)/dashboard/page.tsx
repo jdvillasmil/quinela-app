@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: 'Inicio — Quiniela Proyelec',
 }
 
-export interface NextMatch {
+export interface R32Match {
   id: number
   home_team: string
   away_team: string
@@ -17,11 +17,10 @@ export interface NextMatch {
   match_date: string
   venue: string | null
   group_name: string | null
-}
-
-export interface LiveMatch extends NextMatch {
+  status: 'scheduled' | 'live' | 'finished'
   home_score: number | null
   away_score: number | null
+  day_label: 'Hoy' | 'Mañana'
 }
 
 export interface TeamStats {
@@ -48,6 +47,24 @@ type GroupMatch = {
   home_flag: string | null
   away_flag: string | null
   group_name: string | null
+}
+
+// La app muestra horarios en America/Caracas (UTC-4, sin horario de verano).
+const CARACAS_OFFSET_MS = 4 * 60 * 60 * 1000
+
+function caracasDateKey(d: Date): string {
+  return new Date(d.getTime() - CARACAS_OFFSET_MS).toISOString().slice(0, 10)
+}
+
+// Límites [start, end) de un día calendario en Caracas, offset por días desde hoy.
+function caracasDayBounds(daysFromToday: number): { start: Date; end: Date } {
+  const caracasNow = new Date(Date.now() - CARACAS_OFFSET_MS)
+  const y = caracasNow.getUTCFullYear()
+  const m = caracasNow.getUTCMonth()
+  const d = caracasNow.getUTCDate()
+  const start = new Date(Date.UTC(y, m, d + daysFromToday) + CARACAS_OFFSET_MS)
+  const end = new Date(Date.UTC(y, m, d + daysFromToday + 1) + CARACAS_OFFSET_MS)
+  return { start, end }
 }
 
 function computeStandings(
@@ -103,13 +120,27 @@ function computeStandings(
   })
 }
 
+const KNOCKOUT_PHASES = ['r32', 'r16', 'qf', 'sf', 'third', 'final'] as const
+
 export default async function DashboardPage() {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [profileRes, entryRes, usersRes, groupMatchesRes, nextMatchesRes, liveMatchesRes] = await Promise.all([
+  const today = caracasDayBounds(0)
+  const tomorrow = caracasDayBounds(1)
+  const todayKey = caracasDateKey(today.start)
+
+  const [
+    profileRes,
+    entryRes,
+    usersRes,
+    groupMatchesRes,
+    r32MatchesRes,
+    bracketPredsRes,
+    finishedKnockoutRes,
+  ] = await Promise.all([
     supabase.from('profiles').select('first_name, username').eq('id', user.id).single(),
     (supabase as any).from('leaderboard').select('*').eq('user_id', user.id).maybeSingle(),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'user'),
@@ -120,26 +151,40 @@ export default async function DashboardPage() {
       .order('match_number', { ascending: true }),
     supabase
       .from('matches')
-      .select('id, home_team, away_team, home_flag, away_flag, match_date, venue, group_name')
-      .eq('phase', 'groups')
-      .eq('status', 'scheduled')
-      .order('match_date', { ascending: true })
-      .limit(3),
+      .select('id, home_team, away_team, home_flag, away_flag, match_date, venue, group_name, status, home_score, away_score')
+      .eq('phase', 'r32')
+      .gte('match_date', today.start.toISOString())
+      .lt('match_date', tomorrow.end.toISOString())
+      .order('match_date', { ascending: true }),
+    supabase
+      .from('bracket_predictions')
+      .select('match_id, points_earned')
+      .eq('user_id', user.id),
     supabase
       .from('matches')
-      .select('id, home_team, away_team, home_flag, away_flag, match_date, venue, group_name, home_score, away_score')
-      .eq('status', 'live')
-      .order('match_date', { ascending: true }),
+      .select('id')
+      .in('phase', KNOCKOUT_PHASES)
+      .eq('status', 'finished'),
   ])
 
   const profile = profileRes.data as { first_name: string | null; username: string } | null
   const entryRaw = entryRes.data
   const totalUsers = usersRes.count
   const groupMatches = (groupMatchesRes.data ?? []) as GroupMatch[]
-  const nextMatches = (nextMatchesRes.data ?? []) as NextMatch[]
-  const liveMatches = (liveMatchesRes.data ?? []) as LiveMatch[]
   const entry = (entryRaw as LeaderboardEntry) ?? null
   const matchIds = groupMatches.map((m) => m.id)
+
+  const r32Matches: R32Match[] = ((r32MatchesRes.data ?? []) as Omit<R32Match, 'day_label'>[]).map((m) => ({
+    ...m,
+    day_label: caracasDateKey(new Date(m.match_date)) === todayKey ? 'Hoy' : 'Mañana',
+  }))
+
+  const bracketPreds = (bracketPredsRes.data ?? []) as Array<{ match_id: number; points_earned: number }>
+  const finishedKnockoutIds = new Set(((finishedKnockoutRes.data ?? []) as Array<{ id: number }>).map((m) => m.id))
+  const decidedBracketPreds = bracketPreds.filter((p) => finishedKnockoutIds.has(p.match_id))
+  const bracketPoints = entry?.knockout_points ?? 0
+  const bracketCorrect = decidedBracketPreds.filter((p) => p.points_earned > 0).length
+  const bracketDecided = decidedBracketPreds.length
 
   let predictions: Array<{ match_id: number; predicted_home: number; predicted_away: number }> = []
   if (matchIds.length > 0) {
@@ -176,8 +221,10 @@ export default async function DashboardPage() {
       entry={entry}
       totalUsers={totalUsers ?? 0}
       predictionsCount={predictionsCount}
-      nextMatches={nextMatches}
-      liveMatches={liveMatches}
+      r32Matches={r32Matches}
+      bracketPoints={bracketPoints}
+      bracketCorrect={bracketCorrect}
+      bracketDecided={bracketDecided}
       groupStandings={groupStandings}
     />
   )
