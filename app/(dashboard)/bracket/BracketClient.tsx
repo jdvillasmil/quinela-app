@@ -8,7 +8,8 @@ import { teamEs } from '@/lib/i18n/teams'
 // 9-column butterfly: [L-r32][L-r16][L-qf][L-sf][FINAL][R-sf][R-qf][R-r16][R-r32]
 const CW = 128    // card width
 const CH = 60     // card height
-const SH = 80     // vertical slot per r32 match (card + gap)
+const STATS_H = 56 // prediction-stats strip height under each R32 card
+const SH = 136    // vertical slot per r32 match (card + stats + gaps)
 const GX = 36     // horizontal gap between columns (connector zone)
 const CS = CW + GX // column step = 164
 const PAD = 50    // canvas padding (extra left space for score badges)
@@ -28,6 +29,45 @@ interface Layout {
 }
 
 type ScorePair = { home: number | ''; away: number | '' }
+
+interface PredictionStatRow {
+  predicted_home: number
+  predicted_away: number
+  prediction_count: number
+}
+
+interface MatchStatsData {
+  stats: PredictionStatRow[]
+  total: number
+}
+
+function BracketPredictionStatsView({ data }: { data: MatchStatsData }) {
+  if (data.total === 0) return null
+  const top = data.stats.slice(0, 2)
+  return (
+    <div className="px-1.5 py-1 space-y-1">
+      {top.map((s) => {
+        const pct = Math.round((Number(s.prediction_count) / data.total) * 100)
+        return (
+          <div key={`${s.predicted_home}-${s.predicted_away}`} className="flex items-center gap-1">
+            <span className="text-[9px] font-bold text-gray-300 w-6 text-center shrink-0 tabular-nums">
+              {s.predicted_home}–{s.predicted_away}
+            </span>
+            <div className="flex-1 bg-white/8 rounded-full h-1 overflow-hidden">
+              <div
+                className="h-full bg-skyblue/50 rounded-full"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="text-[8px] text-gray-500 w-6 text-right shrink-0 tabular-nums">
+              {pct}%
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 function winRef(s: string | null | undefined): number | null {
   if (!s || !s.startsWith('W')) return null
@@ -199,9 +239,10 @@ function computeLayout(matches: Match[]): Layout {
 interface Props {
   initialMatches: Match[]
   initialPredictions: BracketPrediction[]
+  matchPredictionStats: Record<number, MatchStatsData>
 }
 
-export default function BracketClient({ initialMatches, initialPredictions }: Props) {
+export default function BracketClient({ initialMatches, initialPredictions, matchPredictionStats }: Props) {
   const [scores, setScores] = useState<Record<number, ScorePair>>(() => {
     const map: Record<number, ScorePair> = {}
     for (const p of initialPredictions) {
@@ -423,6 +464,19 @@ export default function BracketClient({ initialMatches, initialPredictions }: Pr
               {renderCard(match, isFinal)}
             </div>
           ))}
+
+          {/* Prediction stats strip under each R32 card */}
+          {nodes
+            .filter(({ match }) => match.phase === 'r32' && matchPredictionStats[match.id])
+            .map(({ match, x, y }) => (
+              <div
+                key={`stats-${match.id}`}
+                className="absolute rounded-lg border border-[#1E3A6E]/60 bg-[#071729]/60"
+                style={{ left: x, top: y + LABEL_H + CH + 6, width: CW, height: STATS_H }}
+              >
+                <BracketPredictionStatsView data={matchPredictionStats[match.id]} />
+              </div>
+            ))}
         </div>
       </div>
 

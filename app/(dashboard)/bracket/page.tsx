@@ -38,7 +38,34 @@ export default async function BracketPage() {
   const matches = (matchesRaw ?? []) as Match[]
   const predictions = (predictionsRaw ?? []) as BracketPrediction[]
 
+  // Aggregated prediction stats for R32 matches (security definer bypasses RLS)
+  type StatRow = { match_id: number; predicted_home: number; predicted_away: number; prediction_count: number }
+  type MatchPredictionStats = Record<number, { stats: Omit<StatRow, 'match_id'>[]; total: number }>
+
+  const r32MatchIds = matches.filter((m) => m.phase === 'r32').map((m) => m.id)
+  let matchPredictionStats: MatchPredictionStats = {}
+
+  if (r32MatchIds.length > 0) {
+    const { data: statsRaw } = await (supabase as any)
+      .rpc('get_bracket_prediction_stats', { p_match_ids: r32MatchIds })
+    for (const row of (statsRaw ?? []) as StatRow[]) {
+      if (!matchPredictionStats[row.match_id]) {
+        matchPredictionStats[row.match_id] = { stats: [], total: 0 }
+      }
+      matchPredictionStats[row.match_id].stats.push({
+        predicted_home: row.predicted_home,
+        predicted_away: row.predicted_away,
+        prediction_count: row.prediction_count,
+      })
+      matchPredictionStats[row.match_id].total += Number(row.prediction_count)
+    }
+  }
+
   return (
-    <BracketClient initialMatches={matches} initialPredictions={predictions} />
+    <BracketClient
+      initialMatches={matches}
+      initialPredictions={predictions}
+      matchPredictionStats={matchPredictionStats}
+    />
   )
 }
