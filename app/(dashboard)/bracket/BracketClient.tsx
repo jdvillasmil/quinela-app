@@ -1,8 +1,25 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useTransition, useMemo } from 'react'
+import { Loader2, Save, CheckCircle, AlertCircle } from 'lucide-react'
 import type { Match, BracketPrediction } from '@/types'
+import { saveBracketPredictions } from './actions'
 import { teamEs } from '@/lib/i18n/teams'
+
+// R32 slots start out holding a group-standing placeholder until the real
+// qualifier is known — e.g. "1A" (winner group A), "2B" (runner-up group B),
+// "3C/D/E" (best third place among groups C/D/E). This is NOT the same format
+// as the W73/L73 winner/loser refs used by r16-and-later rounds (see winRef
+// below) — those are resolved dynamically from finished match results.
+const PLACEHOLDER_TEAM_RE = /^[123][A-L](\/[A-L]){0,2}$/
+
+function isPlaceholderTeam(team: string): boolean {
+  return PLACEHOLDER_TEAM_RE.test(team)
+}
+
+// The 30-minute buffer here is client-only — it's stricter than the server,
+// never looser, so it can't open a gap.
+const EDIT_CUTOFF_MS = 30 * 60 * 1000
 
 // ── Layout constants ──────────────────────────────────────────────────────────
 // 9-column butterfly: [L-r32][L-r16][L-qf][L-sf][FINAL][R-sf][R-qf][R-r16][R-r32]
@@ -264,6 +281,9 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
     }
     return map
   })
+  const [isPending, startTransition] = useTransition()
+  const [result, setResult] = useState<{ success: boolean; message: string; saved?: number; skipped?: number } | null>(null)
+
   // Regular function (not useCallback) so recursive calls always read the
   // current render's scores/initialMatches without any stale-closure risk.
   function resolveTeam(teamStr: string): string {
@@ -321,6 +341,52 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
     return teamStr
   }
 
+  // A team slot is "resolved" once it's a real team name — not a still-symbolic
+  // group placeholder ("1A") and not an unresolved W/L winner ref ('TBD').
+  function isTeamResolved(teamStr: string): boolean {
+    const resolved = resolveTeam(teamStr)
+    return resolved !== 'TBD' && !isPlaceholderTeam(resolved)
+  }
+
+  // Matches the per-match kickoff gate enforced server-side by RLS on
+  // bracket_predictions (migration 20260629000001) and re-checked in
+  // saveBracketPredictions: any knockout-phase match is editable once both
+  // teams are known, it hasn't started, and kickoff is still in the future.
+  function isMatchEditable(match: Match): boolean {
+    return (
+      match.status === 'scheduled' &&
+      isTeamResolved(match.home_team) &&
+      isTeamResolved(match.away_team) &&
+      new Date(match.match_date).getTime() - EDIT_CUTOFF_MS > Date.now()
+    )
+  }
+
+  const handleScoreChange = (matchId: number, side: 'home' | 'away', value: string) => {
+    const num = value === '' ? '' : Math.max(0, parseInt(value, 10) || 0)
+    setScores(prev => ({
+      ...prev,
+      [matchId]: { ...(prev[matchId] ?? { home: '', away: '' }), [side]: num },
+    }))
+    setResult(null)
+  }
+
+  const handleSave = () => {
+    const payload = initialMatches
+      .filter(isMatchEditable)
+      .map(m => {
+        const s = scores[m.id]
+        if (!s || s.home === '' || s.away === '') return null
+        return { match_id: m.id, predicted_home: s.home as number, predicted_away: s.away as number }
+      })
+      .filter(Boolean) as { match_id: number; predicted_home: number; predicted_away: number }[]
+
+    startTransition(async () => {
+      const res = await saveBracketPredictions(payload)
+      if (!res.success) console.error('[bracket] saveBracketPredictions failed:', res)
+      setResult(res)
+    })
+  }
+
   const { nodes, edges, svgW, svgH, third, thirdPos } = useMemo(
     () => computeLayout(initialMatches),
     [initialMatches]
@@ -332,13 +398,16 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
     const away = resolveTeam(match.away_team)
     const s = scores[match.id] ?? { home: '', away: '' }
 
-    const isR32 = match.phase === 'r32'
+    // Show score inputs once both slots hold a real team — true for r32 once
+    // group standings settle, and for r16+ once the feeding matches finish.
+    const showInputs = home !== 'TBD' && !isPlaceholderTeam(home) && away !== 'TBD' && !isPlaceholderTeam(away)
+    const isEditable = isMatchEditable(match)
     const hasPred = s.home !== '' && s.away !== ''
 
     let borderClass: string
     if (isFinal) {
       borderClass = 'border-skyblue/70 shadow-[0_0_12px_rgba(100,175,230,0.25)]'
-    } else if (isR32 && match.status === 'finished' && match.home_score != null) {
+    } else if (showInputs && match.status === 'finished' && match.home_score != null) {
       const rc = getMatchResultClass(match, s)
       borderClass = rc === 'green'
         ? 'border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
@@ -352,9 +421,9 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
     }
 
     const rowBase = 'flex items-center flex-1 px-1.5 gap-1'
-    const teamLabel = `w-[84px] min-w-0 truncate text-[10px] font-medium ${isR32 ? 'text-gray-300' : 'text-gray-500 italic'}`
+    const teamLabel = `w-[84px] min-w-0 truncate text-[10px] font-medium ${showInputs ? 'text-gray-300' : 'text-gray-500 italic'}`
 
-    if (!isR32) {
+    if (!showInputs) {
       return (
         <div className={`flex flex-col h-full overflow-hidden rounded-lg border bg-[#071729]/60 ${borderClass} opacity-60`}>
           <div className={`${rowBase} border-b border-[#1E3A6E]`}>
@@ -379,9 +448,8 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
             min={0}
             max={99}
             value={s.home}
-            disabled
-            readOnly
-            onChange={() => {}}
+            disabled={!isEditable}
+            onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
             className={inputCls}
           />
         </div>
@@ -392,9 +460,8 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
             min={0}
             max={99}
             value={s.away}
-            disabled
-            readOnly
-            onChange={() => {}}
+            disabled={!isEditable}
+            onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
             className={inputCls}
           />
         </div>
@@ -404,13 +471,26 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
 
   const canvasH = svgH + LABEL_H
 
+  const r32Matches = initialMatches.filter(m => m.phase === 'r32')
+  const editableCount = initialMatches.filter(isMatchEditable).length
+  const finishedR32 = r32Matches.filter(m => m.status === 'finished').length
+  const footerStatus = editableCount > 0
+    ? `${editableCount} cruce${editableCount !== 1 ? 's' : ''} aún sin iniciar — guarda tu bracket`
+    : finishedR32 === r32Matches.length && r32Matches.length > 0
+    ? 'Todos los cruces de 1/16 completados'
+    : finishedR32 > 0
+    ? `${finishedR32} de ${r32Matches.length} cruces de 1/16 completados`
+    : 'El bracket está en progreso'
+
   return (
     <div className="space-y-6 pb-24">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">Bracket Eliminatorio</h1>
         <p className="text-sm text-gray-400 mt-1">
-          Tus predicciones del bracket. Los resultados se actualizan conforme avanza el torneo.
+          {editableCount > 0
+            ? 'Ingresa el marcador predicho para cada cruce. Los partidos se bloquean al iniciar.'
+            : 'Tus predicciones del bracket. Los resultados se actualizan conforme avanza el torneo.'}
         </p>
       </div>
 
@@ -532,7 +612,40 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
         </div>
       )}
 
-      {/* Save bar hidden — R32 predictions are locked */}
+      {/* Save bar — only rendered while at least one knockout match is still editable */}
+      {editableCount > 0 && (
+        <div className="fixed bottom-[80px] sm:bottom-0 left-0 right-0 bg-[#071729] border-t border-[#1E3A6E]/60 p-4 shadow-lg z-40">
+          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex-1">
+              {result ? (() => {
+                const isPartial = result.success && (result.skipped ?? 0) > 0
+                const colorClass = !result.success
+                  ? 'text-red-400'
+                  : isPartial
+                  ? 'text-amber-400'
+                  : 'text-emerald-400'
+                const Icon = result.success && !isPartial ? CheckCircle : AlertCircle
+                return (
+                  <div className={`flex items-center gap-2 text-sm font-medium ${colorClass}`}>
+                    <Icon className="w-4 h-4 shrink-0" />
+                    {result.message}
+                  </div>
+                )
+              })() : (
+                <p className="text-xs text-gray-500">{footerStatus}</p>
+              )}
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={isPending}
+              className="flex items-center justify-center gap-2 px-6 py-2.5 w-full sm:w-auto bg-skyblue text-navy text-sm font-bold rounded-lg hover:bg-skyblue/90 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+            >
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {isPending ? 'Guardando...' : 'Guardar Bracket Completo'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
