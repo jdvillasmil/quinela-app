@@ -341,22 +341,62 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
     return teamStr
   }
 
-  // A team slot is "resolved" once it's a real team name — not a still-symbolic
-  // group placeholder ("1A") and not an unresolved W/L winner ref ('TBD').
-  function isTeamResolved(teamStr: string): boolean {
-    const resolved = resolveTeam(teamStr)
+  // Same walk as resolveTeam(), but without the scores[] fallback — a slot
+  // only counts as confirmed once the feeding match has an actual finished
+  // result (or an admin-set knockout_winner for a draw decided on penalties).
+  // This is what isMatchEditable must use: the fallback in resolveTeam() is
+  // fine for the bracket preview, but if it drove editability too, a viewer
+  // could unlock and save a later-round match just by typing a provisional,
+  // unsaved score into the still-unplayed match that feeds it.
+  function resolveConfirmedTeam(teamStr: string): string {
+    if (!teamStr) return 'TBD'
+
+    if (teamStr.startsWith('W')) {
+      const n = parseInt(teamStr.slice(1), 10)
+      const m = initialMatches.find(x => x.match_number === n)
+      if (m && m.status === 'finished' && m.home_score != null && m.away_score != null) {
+        if (m.home_score > m.away_score) return resolveConfirmedTeam(m.home_team)
+        if (m.away_score > m.home_score) return resolveConfirmedTeam(m.away_team)
+        if (m.knockout_winner) return resolveConfirmedTeam(m.knockout_winner)
+      }
+      return 'TBD'
+    }
+
+    if (teamStr.startsWith('L')) {
+      const n = parseInt(teamStr.slice(1), 10)
+      const m = initialMatches.find(x => x.match_number === n)
+      if (m && m.status === 'finished' && m.home_score != null && m.away_score != null) {
+        if (m.home_score > m.away_score) return resolveConfirmedTeam(m.away_team)
+        if (m.away_score > m.home_score) return resolveConfirmedTeam(m.home_team)
+        if (m.knockout_winner) {
+          const winner = resolveConfirmedTeam(m.knockout_winner)
+          const h = resolveConfirmedTeam(m.home_team)
+          const a = resolveConfirmedTeam(m.away_team)
+          return h === winner ? a : h
+        }
+      }
+      return 'TBD'
+    }
+
+    return teamStr
+  }
+
+  function isTeamConfirmed(teamStr: string): boolean {
+    const resolved = resolveConfirmedTeam(teamStr)
     return resolved !== 'TBD' && !isPlaceholderTeam(resolved)
   }
 
   // Matches the per-match kickoff gate enforced server-side by RLS on
-  // bracket_predictions (migration 20260629000001) and re-checked in
-  // saveBracketPredictions: any knockout-phase match is editable once both
-  // teams are known, it hasn't started, and kickoff is still in the future.
+  // bracket_predictions (migration 20260703000001) and re-checked in
+  // saveBracketPredictions: only r16 matches are open right now, and only
+  // once both teams are confirmed (real finished result, not a preview), the
+  // match hasn't started, and kickoff is still in the future.
   function isMatchEditable(match: Match): boolean {
     return (
+      match.phase === 'r16' &&
       match.status === 'scheduled' &&
-      isTeamResolved(match.home_team) &&
-      isTeamResolved(match.away_team) &&
+      isTeamConfirmed(match.home_team) &&
+      isTeamConfirmed(match.away_team) &&
       new Date(match.match_date).getTime() - EDIT_CUTOFF_MS > Date.now()
     )
   }
