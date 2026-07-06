@@ -28,7 +28,7 @@ const CH = 60     // card height
 const SH = 80     // vertical slot per r32 match
 const GX = 36     // horizontal gap between columns (connector zone)
 const CS = CW + GX // column step = 164
-const PAD = 50    // canvas padding (extra left space for score badges)
+const PAD = 50    // canvas padding
 const LABEL_H = 24
 const THIRD_GAP = 32     // vertical gap between the final card and the third-place card
 const THIRD_LABEL_H = 16 // height of the floating "Tercer Puesto" label above that card
@@ -461,16 +461,17 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
     }
 
     const rowBase = 'flex items-center flex-1 px-1.5 gap-1'
-    const teamLabel = `w-[84px] min-w-0 truncate text-[10px] font-medium ${showInputs ? 'text-gray-300' : 'text-gray-500 italic'}`
+    const teamLabelBase = `min-w-0 truncate text-[10px] font-medium ${showInputs ? 'text-gray-300' : 'text-gray-500 italic'}`
+    const isFinished = match.status === 'finished' && match.home_score != null && match.away_score != null
 
     if (!showInputs) {
       return (
         <div className={`flex flex-col h-full overflow-hidden rounded-lg border bg-[#071729]/60 ${borderClass} opacity-60`}>
           <div className={`${rowBase} border-b border-[#1E3A6E]`}>
-            <span className={teamLabel}>{home === 'TBD' ? '—' : teamEs(home)}</span>
+            <span className={`w-[84px] ${teamLabelBase}`}>{home === 'TBD' ? '—' : teamEs(home)}</span>
           </div>
           <div className={rowBase}>
-            <span className={teamLabel}>{away === 'TBD' ? '—' : teamEs(away)}</span>
+            <span className={`w-[84px] ${teamLabelBase}`}>{away === 'TBD' ? '—' : teamEs(away)}</span>
           </div>
         </div>
       )
@@ -478,6 +479,8 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
 
     const inputCls =
       'w-7 shrink-0 text-center text-[11px] font-bold bg-[#0D1F3C] border border-[#1E3A6E] rounded text-skyblue focus:outline-none focus:border-skyblue disabled:opacity-40 disabled:cursor-not-allowed'
+    const teamLabel = `w-16 ${teamLabelBase}`
+    const scorePillCls = 'shrink-0 w-4 text-center text-[9px] font-bold text-gray-300 bg-white/10 rounded tabular-nums'
 
     return (
       <div className={`flex flex-col h-full overflow-hidden rounded-lg border bg-[#071729] ${borderClass}`}>
@@ -492,6 +495,7 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
             onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
             className={inputCls}
           />
+          {isFinished && <span className={scorePillCls}>{match.home_score}</span>}
         </div>
         <div className={`${rowBase} ${hasPred ? 'bg-skyblue/10' : ''}`}>
           <span className={teamLabel}>{teamEs(away)}</span>
@@ -504,6 +508,7 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
             onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
             className={inputCls}
           />
+          {isFinished && <span className={scorePillCls}>{match.away_score}</span>}
         </div>
       </div>
     )
@@ -569,21 +574,6 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
               />
             ))}
           </svg>
-
-          {/* Official score badges to the left of finished R32 cards */}
-          {nodes
-            .filter(({ match }) => match.phase === 'r32' && match.status === 'finished' && match.home_score != null)
-            .map(({ match, x, y }) => (
-              <div
-                key={`score-${match.id}`}
-                className="absolute flex items-center justify-center"
-                style={{ left: x - GX, top: y + LABEL_H, width: GX, height: CH }}
-              >
-                <span className="text-[9px] font-bold text-white/50 whitespace-nowrap">
-                  {match.home_score}–{match.away_score}
-                </span>
-              </div>
-            ))}
 
           {/* Match cards */}
           {nodes.map(({ match, x, y, isFinal }) => (
