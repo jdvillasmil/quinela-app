@@ -137,7 +137,7 @@ export default function AdminMatchesClient({ initialMatches }: { initialMatches:
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <span className="w-24 text-right font-medium">{teamEs(m.home_team)}</span>
+                        <span className="w-24 text-right font-medium">{teamEs(resolveAdminTeam(m.home_team, matchesByNumber))}</span>
                         <input
                           type="number"
                           min={0}
@@ -153,7 +153,7 @@ export default function AdminMatchesClient({ initialMatches }: { initialMatches:
                           onChange={(e) => handleScoreChange(m.id, 'away', e.target.value)}
                           className="w-12 h-8 text-center border border-gray-300 rounded focus:border-skyblue focus:ring-1 focus:ring-skyblue outline-none"
                         />
-                        <span className="w-24 font-medium">{teamEs(m.away_team)}</span>
+                        <span className="w-24 font-medium">{teamEs(resolveAdminTeam(m.away_team, matchesByNumber))}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center">
