@@ -21,6 +21,10 @@ function isPlaceholderTeam(team: string): boolean {
 // never looser, so it can't open a gap.
 const EDIT_CUTOFF_MS = 30 * 60 * 1000
 
+// Knockout phases open for predictions once their feeding matches resolve.
+// r32 is excluded — those slots come from group standings, not this form.
+const EDITABLE_PHASES = new Set(['r16', 'qf', 'sf', 'final', 'third'])
+
 // ── Layout constants ──────────────────────────────────────────────────────────
 // 9-column butterfly: [L-r32][L-r16][L-qf][L-sf][FINAL][R-sf][R-qf][R-r16][R-r32]
 const CW = 128    // card width
@@ -387,13 +391,13 @@ export default function BracketClient({ initialMatches, initialPredictions, matc
   }
 
   // Matches the per-match kickoff gate enforced server-side by RLS on
-  // bracket_predictions (migration 20260703000001) and re-checked in
-  // saveBracketPredictions: only r16 matches are open right now, and only
-  // once both teams are confirmed (real finished result, not a preview), the
-  // match hasn't started, and kickoff is still in the future.
+  // bracket_predictions (migration 20260708000001) and re-checked in
+  // saveBracketPredictions: any knockout phase past groups/r32 is open, and
+  // only once both teams are confirmed (real finished result, not a
+  // preview), the match hasn't started, and kickoff is still in the future.
   function isMatchEditable(match: Match): boolean {
     return (
-      match.phase === 'r16' &&
+      EDITABLE_PHASES.has(match.phase) &&
       match.status === 'scheduled' &&
       isTeamConfirmed(match.home_team) &&
       isTeamConfirmed(match.away_team) &&
